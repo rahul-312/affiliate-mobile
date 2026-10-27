@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { spacing } from '@/components/theme';
 
@@ -15,13 +15,21 @@ export const palette = {
   sand3: '#d3c1a8',
   shadow: '#d8cfc4',
   danger: '#a3321f',
+  dangerBg: '#f3e1da',
+  onInk: '#ffffff',
 };
 
 export const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' });
 
-type LuxFieldProps = TextInputProps & { label: string; trailing?: ReactNode; hint?: string; error?: string | null };
+type LuxFieldProps = TextInputProps & {
+  label: string;
+  trailing?: ReactNode;
+  hint?: string;
+  error?: string | null;
+  ref?: Ref<ComponentRef<typeof TextInput>>;
+};
 
-export function LuxField({ label, trailing, hint, error, ...input }: LuxFieldProps) {
+export function LuxField({ label, trailing, hint, error, ref, style, ...input }: LuxFieldProps) {
   const [focused, setFocused] = useState(false);
   const note = error ?? hint;
   return (
@@ -29,11 +37,12 @@ export function LuxField({ label, trailing, hint, error, ...input }: LuxFieldPro
       <Text style={styles.label}>{label}</Text>
       <View style={[styles.inputWrap, focused && styles.inputWrapFocused, !!error && styles.inputWrapError]}>
         <TextInput
-          {...input}
           accessibilityLabel={label}
           accessibilityHint={note ?? undefined}
           placeholderTextColor={palette.inkMuted}
-          style={styles.input}
+          {...input}
+          ref={ref}
+          style={[styles.input, style]}
           onFocus={(e) => {
             setFocused(true);
             input.onFocus?.(e);
@@ -70,7 +79,7 @@ export function LuxChips<T extends string>({
           <Pressable
             key={o.value}
             accessibilityRole="radio"
-            accessibilityState={{ selected }}
+            accessibilityState={{ checked: selected }}
             onPress={() => onChange(o.value)}
             style={({ pressed }) => [
               styles.chip,
@@ -83,6 +92,15 @@ export function LuxChips<T extends string>({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+/** Error banner in the warm palette; the shared Banner's cool reds clash with it. */
+export function LuxErrorBanner({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
+      <Text style={styles.bannerText}>{children}</Text>
     </View>
   );
 }
@@ -138,7 +156,10 @@ const styles = StyleSheet.create({
   },
   chipSelected: { backgroundColor: palette.ink, borderColor: palette.ink },
   chipText: { fontSize: 14, color: palette.ink },
-  chipTextSelected: { color: '#fff' },
+  chipTextSelected: { color: palette.onInk },
+
+  banner: { padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: palette.danger, backgroundColor: palette.dangerBg },
+  bannerText: { fontSize: 14, lineHeight: 20, color: palette.danger },
 
   streak: { position: 'absolute', width: 26, height: 200, borderRadius: 20, backgroundColor: palette.shadow, opacity: 0.35 },
   stoneTop: { position: 'absolute', top: 90, right: -50, width: 110, height: 140, borderRadius: 36, backgroundColor: palette.sand2, transform: [{ rotate: '-18deg' }] },

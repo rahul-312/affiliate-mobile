@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Decor, LuxChips, LuxField, palette, serif } from '@/components/lux';
+import { Decor, LuxChips, LuxErrorBanner, LuxField, palette, serif } from '@/components/lux';
 import { spacing } from '@/components/theme';
-import { Banner } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import type { PromotionChannel } from '@/lib/types';
@@ -34,6 +33,8 @@ export default function SignUpScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emailRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const errors = {
     name: name.trim().length < 2 ? 'Enter your name' : null,
@@ -46,6 +47,8 @@ export default function SignUpScreen() {
   const show = (message: string | null) => (submitted ? message : null);
 
   const submit = async () => {
+    // The keyboard's Go key calls this directly, bypassing the disabled CTA.
+    if (busy) return;
     setSubmitted(true);
     if (!valid || !channel) return;
     setBusy(true);
@@ -73,14 +76,13 @@ export default function SignUpScreen() {
           <View style={styles.topBar}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back to sign in"
-              onPress={() => router.replace('/login')}
+              accessibilityLabel="Back"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
               hitSlop={12}
               style={styles.back}
             >
               <Ionicons name="arrow-back" size={20} color={palette.ink} />
             </Pressable>
-            <Text style={styles.step}>APPLICATION</Text>
           </View>
 
           <View style={styles.hero}>
@@ -94,7 +96,7 @@ export default function SignUpScreen() {
             <Text style={styles.subtitle}>Tell us a little about yourself. We review every application within one business day.</Text>
           </View>
 
-          {error ? <Banner tone="danger">{error}</Banner> : null}
+          {error ? <LuxErrorBanner>{error}</LuxErrorBanner> : null}
 
           <Section index="01" title="About you">
             <LuxField
@@ -106,9 +108,12 @@ export default function SignUpScreen() {
               textContentType="name"
               maxLength={100}
               returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => emailRef.current?.focus()}
               error={show(errors.name)}
             />
             <LuxField
+              ref={emailRef}
               label="Email"
               placeholder="you@example.com"
               value={email}
@@ -119,14 +124,21 @@ export default function SignUpScreen() {
               autoCorrect={false}
               maxLength={254}
               returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
               error={show(errors.email)}
             />
             <LuxField
+              ref={passwordRef}
               label="Password"
               placeholder="Create a password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              // While shown in plain text, keep the keyboard from capitalising, correcting or learning it.
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
               autoComplete="new-password"
               textContentType="newPassword"
               maxLength={72}
@@ -177,15 +189,15 @@ export default function SignUpScreen() {
               style={({ pressed }) => [styles.cta, (pressed || busy) && { opacity: busy ? 0.7 : 0.88 }]}
             >
               {busy ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={palette.onInk} />
               ) : (
                 <>
                   <Text style={styles.ctaText}>SUBMIT APPLICATION</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                  <Ionicons name="arrow-forward" size={18} color={palette.onInk} />
                 </>
               )}
             </Pressable>
-            <Text style={styles.fineprint}>No payment details needed now. We'll ask for those once you're approved.</Text>
+            <Text style={styles.fineprint}>{"No payment details needed now. We'll ask for those once you're approved."}</Text>
           </View>
 
           <View style={styles.orRow}>
@@ -223,9 +235,10 @@ function Section({ index, title, children }: { index: string; title: string; chi
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   flex: { flex: 1 },
+  // The bottom padding keeps the last controls clear of the decorative dunes in Decor.
   content: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: 200, gap: spacing.xl },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topBar: { flexDirection: 'row', alignItems: 'center' },
   back: {
     width: 40,
     height: 40,
@@ -236,7 +249,6 @@ const styles = StyleSheet.create({
     borderColor: palette.inputBorder,
     backgroundColor: palette.inputBg,
   },
-  step: { fontSize: 11, letterSpacing: 3, color: palette.inkMuted },
 
   hero: { gap: spacing.sm, marginTop: spacing.md },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -265,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
   },
-  ctaText: { color: '#fff', fontSize: 13, fontWeight: '600', letterSpacing: 3 },
+  ctaText: { color: palette.onInk, fontSize: 13, fontWeight: '600', letterSpacing: 3 },
   fineprint: { fontSize: 12, lineHeight: 17, color: palette.inkMuted, textAlign: 'center' },
 
   orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
