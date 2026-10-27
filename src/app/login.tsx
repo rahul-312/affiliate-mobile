@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextInputInstance,
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +33,7 @@ const palette = {
   sand2: '#e0d2bf',
   sand3: '#d3c1a8',
   shadow: '#d8cfc4',
+  onInk: '#ffffff',
 };
 
 const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' });
@@ -43,12 +45,24 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResetHelp, setShowResetHelp] = useState(false);
+  const passwordRef = useRef<TextInputInstance>(null);
+
+  // Re-hide a shown password before the app-switcher snapshot is taken.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') setShowPassword(false);
+    });
+    return () => sub.remove();
+  }, []);
 
   const submit = async () => {
+    if (busy) return;
     if (!email.trim() || !password) {
       setError('Enter your email and password');
       return;
     }
+    setShowPassword(false);
     setBusy(true);
     setError(null);
     try {
@@ -59,104 +73,126 @@ export default function LoginScreen() {
     }
   };
 
-  // There is no self-serve reset endpoint yet, so point people at support rather than faking one.
-  const forgotPassword = () =>
-    Alert.alert('Forgot password?', 'Contact the program team from the email you signed up with and they will reset it for you.');
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/welcome'));
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    // Decor sits outside the safe area so the shapes run to the screen edges.
+    <View style={styles.root}>
       <Decor />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.hero}>
-            <View style={styles.eyebrowRow}>
-              <View style={styles.eyebrowRule} />
-              <Text style={styles.eyebrow}>WELCOME</Text>
-            </View>
-            <Text style={styles.title} accessibilityRole="header">
-              Sign in
-            </Text>
-            <Text style={styles.subtitle}>Continue to your account</Text>
-          </View>
-
-          {error ? <Banner tone="danger">{error}</Banner> : null}
-
-          <LuxField
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            autoComplete="email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-          />
-
-          <View style={styles.passwordBlock}>
-            <LuxField
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoComplete="current-password"
-              returnKeyType="go"
-              onSubmitEditing={submit}
-              trailing={
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                  onPress={() => setShowPassword((v) => !v)}
-                  hitSlop={12}
-                >
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={palette.ink} />
-                </Pressable>
-              }
-            />
-            <Pressable accessibilityRole="link" onPress={forgotPassword} hitSlop={8} style={[styles.forgot, styles.link]}>
-              <Text style={styles.linkText}>Forgot password?</Text>
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={goBack} hitSlop={12} style={styles.back}>
+              <Ionicons name="chevron-back" size={24} color={palette.ink} />
             </Pressable>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Sign in"
-            accessibilityState={{ disabled: busy, busy }}
-            onPress={submit}
-            disabled={busy}
-            style={({ pressed }) => [styles.cta, (pressed || busy) && { opacity: busy ? 0.7 : 0.88 }]}
-          >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>SIGN IN</Text>
-                <Ionicons name="arrow-forward" size={18} color="#fff" />
-              </>
-            )}
-          </Pressable>
-
-          <View style={styles.orRow}>
-            <View style={styles.orRule} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.orRule} />
-          </View>
-
-          <Pressable accessibilityRole="link" onPress={() => router.replace('/signup')} style={styles.joinRow} hitSlop={8}>
-            <Text style={styles.joinText}>New here?</Text>
-            <View style={styles.link}>
-              <Text style={styles.linkText}>Apply to join</Text>
+  
+            <View style={styles.hero}>
+              <View style={styles.eyebrowRow}>
+                <View style={styles.eyebrowRule} />
+                <Text style={styles.eyebrow}>WELCOME</Text>
+              </View>
+              <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+                Sign in
+              </Text>
+              <Text style={styles.subtitle}>Continue to your account</Text>
             </View>
-            <Ionicons name="arrow-forward" size={18} color={palette.ink} />
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+  
+            {error ? <Banner tone="danger">{error}</Banner> : null}
+  
+            <LuxField
+              label="Email"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              autoComplete="email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+            />
+  
+            <View style={styles.passwordBlock}>
+              <LuxField
+                ref={passwordRef}
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                // The OS only suppresses these while the text is hidden; keep them off when it's shown.
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                autoComplete="current-password"
+                returnKeyType="go"
+                onSubmitEditing={submit}
+                trailing={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                    onPress={() => setShowPassword((v) => !v)}
+                    hitSlop={12}
+                  >
+                    <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={palette.ink} />
+                  </Pressable>
+                }
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showResetHelp }}
+                onPress={() => setShowResetHelp((v) => !v)}
+                hitSlop={8}
+                style={[styles.forgot, styles.link]}
+              >
+                <Text style={styles.linkText}>Forgot password?</Text>
+              </Pressable>
+              {/* No self-serve reset endpoint yet; inline help works on web too, unlike Alert. */}
+              {showResetHelp ? (
+                <Banner tone="neutral">Contact the program team from the email you signed up with and they will reset it for you.</Banner>
+              ) : null}
+            </View>
+  
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign in"
+              accessibilityState={{ disabled: busy, busy }}
+              onPress={submit}
+              disabled={busy}
+              style={({ pressed }) => [styles.cta, (pressed || busy) && { opacity: busy ? 0.7 : 0.88 }]}
+            >
+              {busy ? (
+                <ActivityIndicator color={palette.onInk} />
+              ) : (
+                <>
+                  <Text style={styles.ctaText}>SIGN IN</Text>
+                  <Ionicons name="arrow-forward" size={18} color={palette.onInk} />
+                </>
+              )}
+            </Pressable>
+  
+            <View style={styles.orRow}>
+              <View style={styles.orRule} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.orRule} />
+            </View>
+  
+            <Pressable accessibilityRole="link" onPress={() => router.replace('/signup')} style={styles.joinRow} hitSlop={8}>
+              <Text style={styles.joinText}>New here?</Text>
+              <View style={styles.link}>
+                <Text style={styles.linkText}>Apply to join</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={18} color={palette.ink} />
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-function LuxField({ label, trailing, ...input }: TextInputProps & { label: string; trailing?: ReactNode }) {
+function LuxField({ label, trailing, ref, ...input }: TextInputProps & { label: string; trailing?: ReactNode; ref?: Ref<TextInputInstance> }) {
   const [focused, setFocused] = useState(false);
   return (
     <View style={styles.field}>
@@ -164,6 +200,7 @@ function LuxField({ label, trailing, ...input }: TextInputProps & { label: strin
       <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
         <TextInput
           {...input}
+          ref={ref}
           accessibilityLabel={label}
           placeholderTextColor={palette.inkMuted}
           style={styles.input}
@@ -202,9 +239,10 @@ function Decor() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: palette.bg },
+  root: { flex: 1, backgroundColor: palette.bg },
   flex: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: 56, paddingBottom: 200, gap: spacing.xl },
+  content: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: 140, gap: spacing.xl },
+  back: { alignSelf: 'flex-start', marginLeft: -spacing.sm, marginBottom: spacing.lg },
 
   hero: { gap: spacing.sm, marginBottom: spacing.xl },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -245,7 +283,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
   },
-  ctaText: { color: '#fff', fontSize: 13, fontWeight: '600', letterSpacing: 3 },
+  ctaText: { color: palette.onInk, fontSize: 13, fontWeight: '600', letterSpacing: 3 },
 
   orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   orRule: { flex: 1, height: 1, backgroundColor: palette.rule },
