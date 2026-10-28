@@ -10,11 +10,11 @@ The app affiliates use to sign up, share their referral link, track earnings and
 
 You don't need to run anything locally. The APK talks to the deployed backend.
 
-1. On an Android phone, open this repo's **GitHub Releases** page and download the latest `.apk`.
+1. On an Android phone, download the APK: <https://expo.dev/artifacts/eas/U4et7s8_Sq4w46JvFEG9n6UOSVEk36MbODCyVr-M_tg.apk>.
 2. Open the file. If Android asks, allow **Install unknown apps** for your browser.
 3. Open **Affiliate Hub** and sign in with `affiliate@demo.com` / `demo1234`, or sign up as a new affiliate.
 
-To get a new sign-up approved, sign in to the dashboard as `ops@demo.com` / `demo1234` and approve it under **Affiliates**. Then pull down to refresh in the app.
+To get a new sign-up approved, sign in to the [dashboard](https://affiliate-frontend-beta.vercel.app) as `ops@demo.com` / `demo1234` and approve it under **Affiliates**. Then pull down to refresh in the app.
 
 ---
 
