@@ -14,8 +14,6 @@ You don't need to run anything locally. The APK talks to the deployed backend.
 2. Open the file. If Android asks, allow **Install unknown apps** for your browser.
 3. Open **Affiliate Hub** and sign in with `affiliate@demo.com` / `demo1234`, or sign up as a new affiliate.
 
-The first request can take about 30 seconds while the free-tier server wakes up.
-
 To get a new sign-up approved, sign in to the dashboard as `ops@demo.com` / `demo1234` and approve it under **Affiliates**. Then pull down to refresh in the app.
 
 ---
@@ -119,7 +117,7 @@ The APK is built in the cloud with EAS, so you don't need Android Studio for thi
    npx eas-cli@latest init
    ```
 
-3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend.onrender.com/api`.
+3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend.vercel.app/api`.
 4. Start the build:
 
    ```bash
