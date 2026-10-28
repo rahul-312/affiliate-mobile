@@ -117,7 +117,7 @@ The APK is built in the cloud with EAS, so you don't need Android Studio for thi
    npx eas-cli@latest init
    ```
 
-3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend.vercel.app/api`.
+3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend-ten.vercel.app/api`.
 4. Start the build:
 
    ```bash
