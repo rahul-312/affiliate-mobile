@@ -6,11 +6,14 @@ import { spacing } from '@/components/theme';
 import { apiRequest } from '@/lib/api';
 import { formatBps, formatPaise } from '@/lib/money';
 import type { Program } from '@/lib/types';
+import { useUser } from '@/lib/session';
 import { useApi } from '@/lib/useApi';
 
 /** The program terms for signed-in affiliates; like the welcome pitch, every number comes from GET /program. */
 export default function HowItWorksScreen() {
   const { data: program, error, loading, refreshing, refresh } = useApi(() => apiRequest<Program>('/program'));
+  // Approved affiliates see their own rate; the standard rate is only a guide before approval.
+  const ownRate = useUser().commissionRateBps ?? null;
 
   return (
     <LuxScreen edges={['bottom']} eyebrow="START SHARING" title="How it works" refreshing={refreshing} onRefresh={refresh}>
@@ -25,8 +28,8 @@ export default function HowItWorksScreen() {
         <>
           <View style={styles.stats}>
             <LuxCard style={styles.stat}>
-              <Text style={styles.statValue}>{formatBps(program.rateBps)}</Text>
-              <LuxText>commission on every sale</LuxText>
+              <Text style={styles.statValue}>{formatBps(ownRate ?? program.rateBps)}</Text>
+              <LuxText>{ownRate ? 'your commission on every sale' : 'standard rate · yours is confirmed at approval'}</LuxText>
             </LuxCard>
             <LuxCard style={styles.stat}>
               <Text style={styles.statValue}>{formatPaise(program.minPayoutPaise)}</Text>
