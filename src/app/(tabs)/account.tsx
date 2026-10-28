@@ -4,6 +4,7 @@ import { palette, serif } from '@/components/lux';
 import { CardLabel, LuxButton, LuxCard, LuxDivider, LuxPill, LuxRow, LuxScreen, LuxText } from '@/components/luxApp';
 import { spacing } from '@/components/theme';
 import { formatDate } from '@/lib/money';
+import { canChangeOwnStatus, canManagePayouts } from '@/lib/account';
 import { useSession, useUser } from '@/lib/session';
 import { useAccountStatus } from '@/lib/useAccountStatus';
 
@@ -53,7 +54,7 @@ export default function AccountScreen() {
 
       <LuxCard>
         <CardLabel>Payout details</CardLabel>
-        {!(user.status === 'active' || (user.status === 'deactivated' && user.deactivatedBy === 'affiliate')) ? (
+        {!canManagePayouts(user) ? (
           <LuxText>
             {user.status === 'deactivated'
               ? 'Payout details are locked while the affiliate team has paused your account.'
@@ -73,7 +74,14 @@ export default function AccountScreen() {
         )}
       </LuxCard>
 
-      {user.status === 'active' || (user.status === 'deactivated' && user.deactivatedBy === 'affiliate') ? (
+      {/* If a pause or resume was refused because the team paused the account, the card below is gone: keep the reason visible. */}
+      {error && !canChangeOwnStatus(user) ? (
+        <LuxCard>
+          <CardLabel>Account paused</CardLabel>
+          <LuxText muted={false}>{error}</LuxText>
+        </LuxCard>
+      ) : null}
+      {canChangeOwnStatus(user) ? (
         <LuxCard>
           <CardLabel>Taking a break?</CardLabel>
           {error ? <LuxText muted={false}>{error}</LuxText> : null}

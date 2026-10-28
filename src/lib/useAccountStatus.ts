@@ -26,7 +26,9 @@ export function useAccountStatus(onChanged?: () => Promise<unknown> | void) {
         await onChanged?.();
       } catch (err) {
         if (err instanceof ApiError && (err.code === 'INVALID_TRANSITION' || err.status === 403)) {
+          // The status changed elsewhere: reload the user and anything derived from it (e.g. the summary).
           await refreshUser().catch(() => undefined);
+          await onChanged?.();
           setError(err.status === 403 ? err.message : 'Your account status changed in the meantime, so we’ve refreshed it.');
         } else {
           setError(errorMessage(err));

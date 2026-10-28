@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { LuxChips, LuxErrorBanner, LuxField } from '@/components/lux';
 import { IconButton, LuxButton, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
 import { apiRequest, errorMessage } from '@/lib/api';
+import { canManagePayouts } from '@/lib/account';
 import { useSession, useUser } from '@/lib/session';
 import type { PayoutMethodInput, User } from '@/lib/types';
 import { isAccountName, isAccountNumber, isIfsc, isUpiId } from '@/lib/validation';
@@ -42,7 +43,7 @@ export default function PayoutDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // Editable while active or self-paused; locked while the affiliate team has paused the account.
-  if (!(user.status === 'active' || (user.status === 'deactivated' && user.deactivatedBy === 'affiliate'))) {
+  if (!canManagePayouts(user)) {
     const pausedByTeam = user.status === 'deactivated';
     return (
       <LuxScreen edges={['top', 'bottom']} eyebrow="PAYOUTS" title="Payout details" action={<CloseButton />}>

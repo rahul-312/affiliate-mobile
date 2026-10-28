@@ -51,7 +51,7 @@ function PausedStatus({ user, onChanged }: { user: User; onChanged: () => Promis
   }
   return (
     <StatusCard tone="neutral" label="Account paused" title="The affiliate team has paused your account.">
-      {`${user.deactivationReason ? `Reason: ${asSentence(user.deactivationReason)} ` : ''}Your approved earnings are kept but on hold until your account is reactivated. Please contact the affiliate team.`}
+      {`${error ? `${asSentence(error)} ` : ''}${user.deactivationReason ? `Reason: ${asSentence(user.deactivationReason)} ` : ''}Your approved earnings are kept but on hold until your account is reactivated. Please contact the affiliate team.`}
     </StatusCard>
   );
 }
