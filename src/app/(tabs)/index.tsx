@@ -173,12 +173,18 @@ export default function HomeScreen() {
     }
   }, [refreshUser, summary]);
 
-  // Status can change on other tabs (Account) or on the server; refresh what Home shows each time it's opened.
+  // Status can change on other tabs (Account) or on the server; refresh the account and summary each time
+  // Home comes back into focus. The first focus is skipped: both were just loaded on mount.
   const refreshSummary = summary.refresh;
+  const focusedBefore = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      void refreshSummary();
-    }, [refreshSummary]),
+      if (!focusedBefore.current) {
+        focusedBefore.current = true;
+        return;
+      }
+      void Promise.all([refreshUser().catch(() => undefined), refreshSummary()]);
+    }, [refreshUser, refreshSummary]),
   );
 
   const s = summary.data;
