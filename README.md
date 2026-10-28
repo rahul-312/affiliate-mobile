@@ -14,8 +14,6 @@ You don't need to run anything locally. The APK talks to the deployed backend.
 2. Open the file. If Android asks, allow **Install unknown apps** for your browser.
 3. Open **Affiliate Hub** and sign in with `affiliate@demo.com` / `demo1234`, or sign up as a new affiliate.
 
-The first request can take about 30 seconds while the free-tier server wakes up.
-
 To get a new sign-up approved, sign in to the dashboard as `ops@demo.com` / `demo1234` and approve it under **Affiliates**. Then pull down to refresh in the app.
 
 ---
@@ -79,7 +77,7 @@ Sign in with `affiliate@demo.com` / `demo1234`.
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Checks TypeScript types |
 | `npm run doctor` | Checks the Expo project for setup problems |
-| `npm run build:apk` | Builds the APK on EAS (see below) |
+| `npm run build:apk` | Builds the APK on EAS (needs `eas-cli` installed globally; otherwise use the `npx` command below) |
 
 ---
 
@@ -119,12 +117,14 @@ The APK is built in the cloud with EAS, so you don't need Android Studio for thi
    npx eas-cli@latest init
    ```
 
-3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend.onrender.com/api`.
+3. In `eas.json`, set `build.base.env.EXPO_PUBLIC_API_URL` to your deployed backend, for example `https://affiliate-backend.vercel.app/api`.
 4. Start the build:
 
    ```bash
-   npm run build:apk
+   npx eas-cli@latest build -p android --profile preview
    ```
+
+   On the first build, answer **Yes** when it asks to generate a new Android Keystore.
 
 5. When it finishes, download the APK from the link EAS prints, install it on a phone, and check that you can sign in.
 6. Attach the APK to a new **GitHub Release** on this repo.
