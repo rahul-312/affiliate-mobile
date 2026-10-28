@@ -49,6 +49,8 @@ export interface Summary {
   availableForNextPayoutPaise: number;
   minPayoutPaise: number;
   hasPayoutDetails: boolean;
+  /** True while the affiliate team has paused the account: approved earnings wait until it's reactivated. */
+  payoutsOnHold: boolean;
   needsPayoutDetails: boolean;
   belowMinimum: boolean;
   commissionCount: number;

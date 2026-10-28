@@ -21,6 +21,7 @@ import { apiRequest, errorMessage } from '@/lib/api';
 import { formatBps, formatPaise } from '@/lib/money';
 import { useSession, useUser } from '@/lib/session';
 import type { Summary, User } from '@/lib/types';
+import { useAccountStatus } from '@/lib/useAccountStatus';
 import { useApi } from '@/lib/useApi';
 
 const SUBTITLES: Record<User['status'], string> = {
@@ -30,21 +31,11 @@ const SUBTITLES: Record<User['status'], string> = {
   deactivated: 'Your account is paused for now.',
 };
 
-function PausedStatus({ user }: { user: User }) {
-  const { setUser } = useSession();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** "Fraud review." and "Fraud review" both read as one sentence. */
+const asSentence = (text: string) => `${text.trim().replace(/[.!?]+$/, '')}.`;
 
-  const resume = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setUser(await apiRequest<User>('/me/resume', { method: 'POST', body: {} }));
-    } catch (err) {
-      setError(errorMessage(err));
-      setBusy(false);
-    }
-  };
+function PausedStatus({ user, onChanged }: { user: User; onChanged: () => Promise<unknown> }) {
+  const { busy, error, resume } = useAccountStatus(onChanged);
 
   if (user.deactivatedBy === 'affiliate') {
     return (
@@ -60,13 +51,13 @@ function PausedStatus({ user }: { user: User }) {
   }
   return (
     <StatusCard tone="neutral" label="Account paused" title="The affiliate team has paused your account.">
-      {`${user.deactivationReason ? `Reason: ${user.deactivationReason}. ` : ''}Earnings you already have will still be paid. Please contact the affiliate team to reactivate it.`}
+      {`${user.deactivationReason ? `Reason: ${asSentence(user.deactivationReason)} ` : ''}Your approved earnings are kept but on hold until your account is reactivated. Please contact the affiliate team.`}
     </StatusCard>
   );
 }
 
-function ApplicationStatus({ user }: { user: User }) {
-  if (user.status === 'deactivated') return <PausedStatus user={user} />;
+function ApplicationStatus({ user, onChanged }: { user: User; onChanged: () => Promise<unknown> }) {
+  if (user.status === 'deactivated') return <PausedStatus user={user} onChanged={onChanged} />;
   if (user.status === 'pending') {
     return (
       <StatusCard tone="warning" label="Application received" title="We’ve received your application.">
@@ -88,6 +79,7 @@ function ReferralCard({ user }: { user: User }) {
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const active = Boolean(user.referralLinkActive && user.referralLink);
+  const paused = user.status === 'deactivated';
 
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
@@ -112,7 +104,7 @@ function ReferralCard({ user }: { user: User }) {
         <View style={styles.codeText}>
           <Text style={[styles.code, !active && styles.codeInactive]}>{user.referralCode}</Text>
           <Text style={styles.codeSub} numberOfLines={1}>
-            {active ? user.referralLink : 'Activates after approval'}
+            {active ? user.referralLink : paused ? 'Paused' : 'Activates after approval'}
           </Text>
         </View>
         <IconButton icon={copied ? 'checkmark' : 'copy-outline'} label={copied ? 'Copied' : 'Copy link'} onPress={copy} disabled={!active} />
@@ -125,6 +117,12 @@ function ReferralCard({ user }: { user: User }) {
       ) : null}
       {active ? (
         <LuxButton label="Share your link" icon="share-outline" onPress={share} />
+      ) : paused ? (
+        <LuxText>
+          {user.deactivatedBy === 'affiliate'
+            ? 'Your link is paused. Resume your account to share it again.'
+            : 'Your link is paused while the affiliate team has your account on hold.'}
+        </LuxText>
       ) : (
         <LuxText>You can share your link once the affiliate team approves your application.</LuxText>
       )}
@@ -190,9 +188,9 @@ export default function HomeScreen() {
           { title: 'Your earnings summary didn’t load.', message: summary.error },
         ]}
       />
-      <ApplicationStatus user={user} />
+      <ApplicationStatus user={user} onChanged={summary.refresh} />
 
-      {s?.needsPayoutDetails ? (
+      {s?.needsPayoutDetails && !s.payoutsOnHold ? (
         <StatusCard
           tone="warning"
           label="Action needed"
@@ -204,7 +202,7 @@ export default function HomeScreen() {
       ) : null}
 
       <ReferralCard user={user} />
-      {user.status === 'active' && s ? <AtAGlance summary={s} /> : null}
+      {(user.status === 'active' || user.status === 'deactivated') && s ? <AtAGlance summary={s} /> : null}
     </LuxScreen>
   );
 }

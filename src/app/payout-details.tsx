@@ -41,11 +41,19 @@ export default function PayoutDetailsScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (user.status !== 'active') {
+  // Editable while active or self-paused; locked while the affiliate team has paused the account.
+  if (!(user.status === 'active' || (user.status === 'deactivated' && user.deactivatedBy === 'affiliate'))) {
+    const pausedByTeam = user.status === 'deactivated';
     return (
       <LuxScreen edges={['top', 'bottom']} eyebrow="PAYOUTS" title="Payout details" action={<CloseButton />}>
-        <StatusCard tone="neutral" label="Not yet" title="Available after approval.">
-          You can add payout details once your application is approved.
+        <StatusCard
+          tone="neutral"
+          label={pausedByTeam ? 'Paused' : 'Not yet'}
+          title={pausedByTeam ? 'Your account is paused.' : 'Available after approval.'}
+        >
+          {pausedByTeam
+            ? 'Payout details can’t be changed while the affiliate team has paused your account. Please contact them.'
+            : 'You can add payout details once your application is approved.'}
         </StatusCard>
       </LuxScreen>
     );
