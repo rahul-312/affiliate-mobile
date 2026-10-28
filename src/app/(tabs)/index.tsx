@@ -6,6 +6,7 @@ import { palette, serif } from '@/components/lux';
 import {
   CardLabel,
   IconButton,
+  LoadErrorCard,
   LuxButton,
   LuxCard,
   LuxDivider,
@@ -38,7 +39,7 @@ function ApplicationStatus({ user }: { user: User }) {
   }
   if (user.status === 'rejected') {
     return (
-      <StatusCard tone="danger" label="Application update" title="Your application wasn’t approved.">
+      <StatusCard tone="danger" label="Application update" title="Your application wasn’t approved." quiet>
         {user.rejectionReason ? `Reason: ${user.rejectionReason}` : 'Please contact the affiliate team for details.'}
       </StatusCard>
     );
@@ -141,16 +142,12 @@ export default function HomeScreen() {
       refreshing={refreshing}
       onRefresh={refresh}
     >
-      {refreshError ? (
-        <StatusCard tone="danger" label="Couldn’t refresh" title="Your account status didn’t update.">
-          {refreshError}
-        </StatusCard>
-      ) : null}
-      {summary.error ? (
-        <StatusCard tone="danger" label="Couldn’t load" title="Your earnings summary didn’t load.">
-          {summary.error}
-        </StatusCard>
-      ) : null}
+      <LoadErrorCard
+        errors={[
+          { title: 'Your account status didn’t update.', message: refreshError },
+          { title: 'Your earnings summary didn’t load.', message: summary.error },
+        ]}
+      />
       <ApplicationStatus user={user} />
 
       {s?.needsPayoutDetails ? (

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useState } from 'react';
 import { LuxChips, LuxErrorBanner, LuxField } from '@/components/lux';
 import { IconButton, LuxButton, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
@@ -14,8 +14,11 @@ const METHODS: { value: MethodType; label: string }[] = [
   { value: 'bank', label: 'Bank account' },
 ];
 
+/** Falls back to Home when the modal was opened directly (a deep link or a web refresh) and there's nothing behind it. */
+const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
 /** The modal has no header bar, so this is the way out on Android and web, where there's no swipe to dismiss. */
-const CloseButton = () => <IconButton icon="close" label="Close" onPress={() => router.back()} />;
+const CloseButton = ({ disabled }: { disabled?: boolean }) => <IconButton icon="close" label="Close" onPress={close} disabled={disabled} />;
 
 /**
  * Full details are sent once over HTTPS, stored encrypted on the server and
@@ -24,6 +27,7 @@ const CloseButton = () => <IconButton icon="close" label="Close" onPress={() => 
 export default function PayoutDetailsScreen() {
   const user = useUser();
   const { setUser } = useSession();
+  const navigation = useNavigation();
   const [type, setType] = useState<MethodType>(user.payoutMethod?.type ?? 'upi');
   const [upiId, setUpiId] = useState('');
   const [accountName, setAccountName] = useState('');
@@ -67,7 +71,8 @@ export default function PayoutDetailsScreen() {
     setError(null);
     try {
       setUser(await apiRequest<User>('/me/payout-method', { method: 'PUT', body }));
-      router.back();
+      // The modal may already be gone (swiped down mid-save); going back again would leave the tabs.
+      if (navigation.isFocused()) close();
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -79,7 +84,7 @@ export default function PayoutDetailsScreen() {
       edges={['top', 'bottom']}
       eyebrow="PAYOUTS"
       title="Payout details"
-      action={<CloseButton />}
+      action={<CloseButton disabled={busy} />}
       subtitle={user.payoutMethod ? `Currently: ${user.payoutMethod.masked}. Saving replaces it.` : 'Where should we send your earnings?'}
     >
       {error ? <LuxErrorBanner>{error}</LuxErrorBanner> : null}
@@ -113,6 +118,7 @@ export default function PayoutDetailsScreen() {
             value={confirmNumber}
             onChangeText={(v) => setConfirmNumber(v.replace(/\D/g, ''))}
             keyboardType="number-pad"
+            secureTextEntry
             maxLength={18}
             error={show(errors.confirmNumber)}
           />

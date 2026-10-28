@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { palette, serif } from '@/components/lux';
-import { CardLabel, LuxButton, LuxCard, LuxDivider, LuxLoading, LuxPill, LuxRow, LuxScreen, LuxText, StatusCard, tones } from '@/components/luxApp';
+import { CardLabel, LoadErrorCard, LuxButton, LuxCard, LuxDivider, LuxLoading, LuxPill, LuxRow, LuxScreen, LuxText, tones } from '@/components/luxApp';
 import { spacing } from '@/components/theme';
 import { apiRequest } from '@/lib/api';
 import { formatBps, formatDate, formatPaise } from '@/lib/money';
@@ -69,11 +69,12 @@ export default function EarningsScreen() {
       refreshing={summary.refreshing || commissions.refreshing}
       onRefresh={refresh}
     >
-      {summary.error ? (
-        <StatusCard tone="danger" label="Couldn’t load" title="Your balances didn’t load.">
-          {summary.error}
-        </StatusCard>
-      ) : null}
+      <LoadErrorCard
+        errors={[
+          { title: 'Your balances didn’t load.', message: summary.error },
+          { title: 'Your commissions didn’t load.', message: commissions.error },
+        ]}
+      />
       {summary.loading ? <LuxLoading /> : null}
       {s ? (
         <>
@@ -105,11 +106,8 @@ export default function EarningsScreen() {
 
       <LuxCard>
         <CardLabel>Commissions</CardLabel>
-        {commissions.error ? (
-          <StatusCard tone="danger" label="Couldn’t load" title="Your commissions didn’t load.">
-            {commissions.error}
-          </StatusCard>
-        ) : null}
+        {/* Announced in the card at the top; this just explains the empty list. */}
+        {commissions.error ? <LuxText>Couldn’t load your commissions. Pull down to try again.</LuxText> : null}
         {commissions.loading ? <LuxLoading /> : null}
         {commissions.data && commissions.data.items.length === 0 ? <LuxText>No sales yet. Share your link to start earning.</LuxText> : null}
         {commissions.data?.items.map((c, index) => (

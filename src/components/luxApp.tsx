@@ -205,12 +205,27 @@ export function IconButton({ icon, label, onPress, disabled }: { icon: IconName;
 /**
  * A tinted card with a status dot, used for application status and things that need the affiliate's attention.
  * Danger cards are announced when they appear, like LuxErrorBanner, so the body is plain text only.
+ * Pass `quiet` for a standing status that isn't news, such as a rejected application.
  */
-export function StatusCard({ tone, label, title, children, action }: { tone: Tone; label: string; title: string; children?: string; action?: ReactNode }) {
+export function StatusCard({
+  tone,
+  label,
+  title,
+  children,
+  action,
+  quiet,
+}: {
+  tone: Tone;
+  label: string;
+  title: string;
+  children?: string;
+  action?: ReactNode;
+  quiet?: boolean;
+}) {
   const c = tones[tone];
   useEffect(() => {
-    if (tone === 'danger') AccessibilityInfo.announceForAccessibility(children ? `${title} ${children}` : title);
-  }, [tone, title, children]);
+    if (tone === 'danger' && !quiet) AccessibilityInfo.announceForAccessibility(children ? `${title} ${children}` : title);
+  }, [tone, quiet, title, children]);
   return (
     <View style={[styles.statusCard, { backgroundColor: c.bg }]} accessibilityRole={tone === 'danger' ? 'alert' : 'summary'}>
       <View style={styles.statusLabelRow}>
@@ -223,6 +238,22 @@ export function StatusCard({ tone, label, title, children, action }: { tone: Ton
         {action ? <View style={{ marginTop: spacing.sm }}>{action}</View> : null}
       </View>
     </View>
+  );
+}
+
+/**
+ * Every load error on a screen in one card. Separate cards would each announce, and on iOS the
+ * second announcement cuts off the first. Identical messages (e.g. offline) are shown once.
+ */
+export function LoadErrorCard({ errors }: { errors: { title: string; message: string | null }[] }) {
+  const failed = errors.filter((e) => e.message);
+  const [first] = failed;
+  if (!first) return null;
+  const messages = [...new Set(failed.map((e) => e.message))];
+  return (
+    <StatusCard tone="danger" label="Couldn’t load" title={failed.length === 1 ? first.title : 'Some details didn’t load.'}>
+      {messages.join('\n')}
+    </StatusCard>
   );
 }
 
