@@ -105,6 +105,15 @@ export function LuxErrorBanner({ children }: { children: ReactNode }) {
   );
 }
 
+/** Neutral help text in the warm palette. The live region covers Android; iOS callers should also announce it. */
+export function LuxNote({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.helpNote} accessibilityLiveRegion="polite">
+      <Text style={styles.helpText}>{children}</Text>
+    </View>
+  );
+}
+
 /** Stone and sand shapes standing in for photography; purely decorative and behind the form. */
 export function Decor() {
   return (
@@ -160,6 +169,8 @@ const styles = StyleSheet.create({
 
   banner: { padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: palette.danger, backgroundColor: palette.dangerBg },
   bannerText: { fontSize: 14, lineHeight: 20, color: palette.danger },
+  helpNote: { padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: palette.inputBorder, backgroundColor: palette.inputBg },
+  helpText: { fontSize: 14, lineHeight: 20, color: palette.inkMuted },
 
   streak: { position: 'absolute', width: 26, height: 200, borderRadius: 20, backgroundColor: palette.shadow, opacity: 0.35 },
   stoneTop: { position: 'absolute', top: 90, right: -50, width: 110, height: 140, borderRadius: 36, backgroundColor: palette.sand2, transform: [{ rotate: '-18deg' }] },

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   AppState,
   KeyboardAvoidingView,
@@ -12,31 +13,14 @@ import {
   Text,
   TextInput,
   View,
-  type TextInputInstance,
-  type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Banner } from '@/components/ui';
+import { Decor, LuxErrorBanner, LuxField, LuxNote, palette, serif } from '@/components/lux';
 import { spacing } from '@/components/theme';
 import { errorMessage } from '@/lib/api';
 import { useSession } from '@/lib/session';
 
-/** Warm, editorial palette local to this screen; the rest of the app keeps the shared theme. */
-const palette = {
-  bg: '#f6f2ed',
-  ink: '#161412',
-  inkMuted: '#6f6860',
-  inputBg: '#efe9e2',
-  inputBorder: '#e5ddd3',
-  rule: '#d9d1c7',
-  sand1: '#ece2d5',
-  sand2: '#e0d2bf',
-  sand3: '#d3c1a8',
-  shadow: '#d8cfc4',
-  onInk: '#ffffff',
-};
-
-const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' });
+const RESET_HELP = 'Contact the program team from the email you signed up with and they will reset it for you.';
 
 export default function LoginScreen() {
   const { signIn } = useSession();
@@ -46,9 +30,12 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showResetHelp, setShowResetHelp] = useState(false);
-  const passwordRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
+  // State updates land a render later, so two taps in one frame would both see busy=false.
+  const inFlight = useRef(false);
 
-  // Re-hide a shown password before the app-switcher snapshot is taken.
+  // Best effort: re-hide a shown password when the app backgrounds. The OS may snapshot the
+  // app switcher before this re-render is drawn, so it is not a guarantee.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') setShowPassword(false);
@@ -57,11 +44,12 @@ export default function LoginScreen() {
   }, []);
 
   const submit = async () => {
-    if (busy) return;
+    if (inFlight.current) return;
     if (!email.trim() || !password) {
       setError('Enter your email and password');
       return;
     }
+    inFlight.current = true;
     setShowPassword(false);
     setBusy(true);
     setError(null);
@@ -70,7 +58,14 @@ export default function LoginScreen() {
     } catch (err) {
       setError(err instanceof Error && !('status' in err) ? err.message : errorMessage(err));
       setBusy(false);
+      inFlight.current = false;
     }
+  };
+
+  const toggleResetHelp = () => {
+    const next = !showResetHelp;
+    setShowResetHelp(next);
+    if (next) AccessibilityInfo.announceForAccessibility(RESET_HELP);
   };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/welcome'));
@@ -85,7 +80,7 @@ export default function LoginScreen() {
             <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={goBack} hitSlop={12} style={styles.back}>
               <Ionicons name="chevron-back" size={24} color={palette.ink} />
             </Pressable>
-  
+
             <View style={styles.hero}>
               <View style={styles.eyebrowRow}>
                 <View style={styles.eyebrowRule} />
@@ -96,9 +91,9 @@ export default function LoginScreen() {
               </Text>
               <Text style={styles.subtitle}>Continue to your account</Text>
             </View>
-  
-            {error ? <Banner tone="danger">{error}</Banner> : null}
-  
+
+            {error ? <LuxErrorBanner>{error}</LuxErrorBanner> : null}
+
             <LuxField
               label="Email"
               placeholder="Enter your email"
@@ -112,7 +107,7 @@ export default function LoginScreen() {
               submitBehavior="submit"
               onSubmitEditing={() => passwordRef.current?.focus()}
             />
-  
+
             <View style={styles.passwordBlock}>
               <LuxField
                 ref={passwordRef}
@@ -142,18 +137,16 @@ export default function LoginScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: showResetHelp }}
-                onPress={() => setShowResetHelp((v) => !v)}
+                onPress={toggleResetHelp}
                 hitSlop={8}
                 style={[styles.forgot, styles.link]}
               >
                 <Text style={styles.linkText}>Forgot password?</Text>
               </Pressable>
               {/* No self-serve reset endpoint yet; inline help works on web too, unlike Alert. */}
-              {showResetHelp ? (
-                <Banner tone="neutral">Contact the program team from the email you signed up with and they will reset it for you.</Banner>
-              ) : null}
+              {showResetHelp ? <LuxNote>{RESET_HELP}</LuxNote> : null}
             </View>
-  
+
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Sign in"
@@ -171,13 +164,13 @@ export default function LoginScreen() {
                 </>
               )}
             </Pressable>
-  
+
             <View style={styles.orRow}>
               <View style={styles.orRule} />
               <Text style={styles.orText}>OR</Text>
               <View style={styles.orRule} />
             </View>
-  
+
             <Pressable accessibilityRole="link" onPress={() => router.replace('/signup')} style={styles.joinRow} hitSlop={8}>
               <Text style={styles.joinText}>New here?</Text>
               <View style={styles.link}>
@@ -188,52 +181,6 @@ export default function LoginScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
-  );
-}
-
-function LuxField({ label, trailing, ref, ...input }: TextInputProps & { label: string; trailing?: ReactNode; ref?: Ref<TextInputInstance> }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
-        <TextInput
-          {...input}
-          ref={ref}
-          accessibilityLabel={label}
-          placeholderTextColor={palette.inkMuted}
-          style={styles.input}
-          onFocus={(e) => {
-            setFocused(true);
-            input.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            input.onBlur?.(e);
-          }}
-        />
-        {trailing}
-      </View>
-    </View>
-  );
-}
-
-/** Stone and sand shapes standing in for photography; purely decorative and behind the form. */
-function Decor() {
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none" importantForAccessibility="no-hide-descendants">
-      {/* leaf-shadow streaks, top right */}
-      <View style={[styles.streak, { top: -40, right: 40, transform: [{ rotate: '35deg' }] }]} />
-      <View style={[styles.streak, { top: 10, right: -10, width: 18, transform: [{ rotate: '28deg' }] }]} />
-      <View style={[styles.streak, { top: 90, right: 90, height: 120, transform: [{ rotate: '42deg' }] }]} />
-      {/* stone, top right */}
-      <View style={styles.stoneTop} />
-      <View style={styles.stoneTopFace} />
-      {/* sand dunes, bottom */}
-      <View style={[styles.dune, { backgroundColor: palette.sand1, bottom: -170, left: -120, width: 520, transform: [{ rotate: '-8deg' }] }]} />
-      <View style={[styles.dune, { backgroundColor: palette.sand2, bottom: -210, left: -200, width: 460, transform: [{ rotate: '14deg' }] }]} />
-      <View style={[styles.dune, { backgroundColor: palette.sand3, bottom: -250, right: -160, width: 420, transform: [{ rotate: '-12deg' }] }]} />
     </View>
   );
 }
@@ -250,22 +197,6 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 11, letterSpacing: 3, color: palette.inkMuted },
   title: { fontFamily: serif, fontSize: 54, lineHeight: 62, color: palette.ink, letterSpacing: -0.5 },
   subtitle: { fontFamily: serif, fontSize: 17, color: palette.inkMuted },
-
-  field: { gap: spacing.sm },
-  label: { fontSize: 13, letterSpacing: 1, color: palette.ink },
-  inputWrap: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.inputBorder,
-    backgroundColor: palette.inputBg,
-  },
-  inputWrapFocused: { borderColor: palette.ink },
-  input: { flex: 1, fontSize: 15, color: palette.ink, paddingVertical: spacing.md },
 
   passwordBlock: { gap: spacing.md },
   forgot: { alignSelf: 'flex-end' },
@@ -291,9 +222,4 @@ const styles = StyleSheet.create({
 
   joinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   joinText: { fontSize: 14, color: palette.ink },
-
-  streak: { position: 'absolute', width: 26, height: 200, borderRadius: 20, backgroundColor: palette.shadow, opacity: 0.35 },
-  stoneTop: { position: 'absolute', top: 90, right: -50, width: 110, height: 140, borderRadius: 36, backgroundColor: palette.sand2, transform: [{ rotate: '-18deg' }] },
-  stoneTopFace: { position: 'absolute', top: 100, right: -40, width: 70, height: 110, borderRadius: 28, backgroundColor: palette.sand1, transform: [{ rotate: '-18deg' }] },
-  dune: { position: 'absolute', height: 320, borderRadius: 260 },
 });
