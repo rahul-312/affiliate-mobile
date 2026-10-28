@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Share, StyleSheet, Text, View } from 'react-native';
 import { palette, serif } from '@/components/lux';
@@ -51,7 +51,9 @@ function PausedStatus({ user, onChanged }: { user: User; onChanged: () => Promis
   }
   return (
     <StatusCard tone="neutral" label="Account paused" title="The affiliate team has paused your account.">
-      {`${error ? `${asSentence(error)} ` : ''}${user.deactivationReason ? `Reason: ${asSentence(user.deactivationReason)} ` : ''}Your approved earnings are kept but on hold until your account is reactivated. Please contact the affiliate team.`}
+      {`${error ? `${asSentence(error)} ` : ''}${user.deactivationReason ? `Reason: ${asSentence(user.deactivationReason)} ` : ''}Your approved earnings are kept but on hold until your account is reactivated.${
+        error ? '' : ' Please contact the affiliate team.'
+      }`}
     </StatusCard>
   );
 }
@@ -170,6 +172,14 @@ export default function HomeScreen() {
       setRefreshing(false);
     }
   }, [refreshUser, summary]);
+
+  // Status can change on other tabs (Account) or on the server; refresh what Home shows each time it's opened.
+  const refreshSummary = summary.refresh;
+  useFocusEffect(
+    useCallback(() => {
+      void refreshSummary();
+    }, [refreshSummary]),
+  );
 
   const s = summary.data;
   const firstName = user.name.split(' ')[0];
