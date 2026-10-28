@@ -50,6 +50,17 @@
     "scheme": "affiliatehub",
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "eb162f12-f1dc-4685-9487-464f9b3c1ef3"
+      }
+    },
+    "owner": "rahul_312"
   }
 }
