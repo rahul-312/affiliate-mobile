@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, font, spacing } from '@/components/theme';
-import { Banner, Body, Card, Divider, Loading, Row, Screen, Small } from '@/components/ui';
+import { palette, serif } from '@/components/lux';
+import { LuxCard, LuxDivider, LuxLoading, LuxRow, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
+import { spacing } from '@/components/theme';
 import { apiRequest } from '@/lib/api';
 import { formatDate, formatPaise } from '@/lib/money';
 import type { Payout } from '@/lib/types';
@@ -11,38 +12,42 @@ export default function PayoutsScreen() {
   const { data, error, loading, refreshing, refresh } = useApi(() => apiRequest<{ items: Payout[] }>('/me/payouts'));
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh}>
-      {error ? <Banner tone="danger">{error}</Banner> : null}
-      {loading ? <Loading /> : null}
+    <LuxScreen eyebrow="PAYOUTS" title="Payouts" subtitle="Payments our finance team has sent you." refreshing={refreshing} onRefresh={refresh}>
+      {error ? (
+        <StatusCard tone="danger" label="Couldn’t load" title="Your payouts didn’t load.">
+          {error}
+        </StatusCard>
+      ) : null}
+      {loading ? <LuxLoading /> : null}
       {data && data.items.length === 0 ? (
-        <Card>
-          <Body muted>No payouts yet. Once finance sends a payout run that includes your approved earnings, it will appear here with its payment reference.</Body>
-        </Card>
+        <LuxCard>
+          <LuxText>No payouts yet. Once finance sends a payout run that includes your approved earnings, it will appear here with its payment reference.</LuxText>
+        </LuxCard>
       ) : null}
       {data && data.items.length > 0 ? (
-        <Card>
+        <LuxCard>
           {data.items.map((payout, index) => (
-            <View key={payout.batchId}>
-              {index > 0 ? <Divider /> : null}
+            <View key={payout.batchId} style={{ gap: spacing.md }}>
+              {index > 0 ? <LuxDivider /> : null}
               <View style={styles.payout}>
-                <Row>
+                <LuxRow>
                   <Text style={styles.amount}>{formatPaise(payout.amountPaise)}</Text>
-                  <Small>{formatDate(payout.paidAt)}</Small>
-                </Row>
-                <Small>
+                  <LuxText>{formatDate(payout.paidAt)}</LuxText>
+                </LuxRow>
+                <LuxText>
                   {payout.batchNo} · {payout.commissionCount} commission(s)
-                </Small>
-                <Small muted={false}>Reference: {payout.paymentReference}</Small>
+                </LuxText>
+                <LuxText muted={false}>Reference: {payout.paymentReference}</LuxText>
               </View>
             </View>
           ))}
-        </Card>
+        </LuxCard>
       ) : null}
-    </Screen>
+    </LuxScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  payout: { gap: 2, paddingVertical: spacing.xs },
-  amount: { fontSize: font.title, fontWeight: '700', color: colors.success },
+  payout: { gap: 4 },
+  amount: { fontFamily: serif, fontSize: 22, color: palette.ink },
 });

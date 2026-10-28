@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Banner, Body, Button, Chips, Field, Screen, Small } from '@/components/ui';
+import { LuxChips, LuxErrorBanner, LuxField } from '@/components/lux';
+import { LuxButton, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
 import { apiRequest, errorMessage } from '@/lib/api';
 import { useSession, useUser } from '@/lib/session';
 import type { PayoutMethodInput, User } from '@/lib/types';
@@ -32,9 +33,11 @@ export default function PayoutDetailsScreen() {
 
   if (user.status !== 'active') {
     return (
-      <Screen edges={['bottom']}>
-        <Banner tone="info">You can add payout details once your application is approved.</Banner>
-      </Screen>
+      <LuxScreen edges={['bottom']} eyebrow="PAYOUTS" title="Payout details">
+        <StatusCard tone="neutral" label="Not yet" title="Available after approval.">
+          You can add payout details once your application is approved.
+        </StatusCard>
+      </LuxScreen>
     );
   }
 
@@ -69,13 +72,17 @@ export default function PayoutDetailsScreen() {
   };
 
   return (
-    <Screen edges={['bottom']}>
-      {user.payoutMethod ? <Body muted>Currently: {user.payoutMethod.masked}. Saving replaces it.</Body> : null}
-      {error ? <Banner tone="danger">{error}</Banner> : null}
-      <Chips options={METHODS} value={type} onChange={setType} />
+    <LuxScreen
+      edges={['bottom']}
+      eyebrow="PAYOUTS"
+      title="Payout details"
+      subtitle={user.payoutMethod ? `Currently: ${user.payoutMethod.masked}. Saving replaces it.` : 'Where should we send your earnings?'}
+    >
+      {error ? <LuxErrorBanner>{error}</LuxErrorBanner> : null}
+      <LuxChips options={METHODS} value={type} onChange={setType} />
 
       {type === 'upi' ? (
-        <Field
+        <LuxField
           label="UPI ID"
           value={upiId}
           onChangeText={setUpiId}
@@ -87,8 +94,8 @@ export default function PayoutDetailsScreen() {
         />
       ) : (
         <>
-          <Field label="Account holder name" value={accountName} onChangeText={setAccountName} autoComplete="name" maxLength={100} error={show(errors.accountName)} />
-          <Field
+          <LuxField label="Account holder name" value={accountName} onChangeText={setAccountName} autoComplete="name" maxLength={100} error={show(errors.accountName)} />
+          <LuxField
             label="Account number"
             value={accountNumber}
             onChangeText={(v) => setAccountNumber(v.replace(/\D/g, ''))}
@@ -97,7 +104,7 @@ export default function PayoutDetailsScreen() {
             maxLength={18}
             error={show(errors.accountNumber)}
           />
-          <Field
+          <LuxField
             label="Confirm account number"
             value={confirmNumber}
             onChangeText={(v) => setConfirmNumber(v.replace(/\D/g, ''))}
@@ -105,7 +112,7 @@ export default function PayoutDetailsScreen() {
             maxLength={18}
             error={show(errors.confirmNumber)}
           />
-          <Field
+          <LuxField
             label="IFSC"
             value={ifsc}
             onChangeText={(v) => setIfsc(v.toUpperCase())}
@@ -118,8 +125,8 @@ export default function PayoutDetailsScreen() {
         </>
       )}
 
-      <Small>Your details are encrypted and only used by our finance team to send your payouts. We’ll only ever show them masked.</Small>
-      <Button label="Save payout details" onPress={save} busy={busy} />
-    </Screen>
+      <LuxText>Your details are encrypted and only used by our finance team to send your payouts. We’ll only ever show them masked.</LuxText>
+      <LuxButton label="Save payout details" icon="arrow-forward" onPress={save} busy={busy} />
+    </LuxScreen>
   );
 }

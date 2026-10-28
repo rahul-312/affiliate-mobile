@@ -1,29 +1,46 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Share, StyleSheet, Text, View } from 'react-native';
-import { colors, font, radius, spacing } from '@/components/theme';
-import { Banner, Body, Button, Card, Row, Screen, Small, Title } from '@/components/ui';
+import { AccessibilityInfo, Share, StyleSheet, Text, View } from 'react-native';
+import { palette, serif } from '@/components/lux';
+import {
+  CardLabel,
+  IconButton,
+  LuxButton,
+  LuxCard,
+  LuxDivider,
+  LuxRow,
+  LuxScreen,
+  LuxText,
+  StatusCard,
+  tones,
+} from '@/components/luxApp';
+import { spacing } from '@/components/theme';
 import { apiRequest, errorMessage } from '@/lib/api';
 import { formatPaise } from '@/lib/money';
 import { useSession, useUser } from '@/lib/session';
 import type { Summary, User } from '@/lib/types';
 import { useApi } from '@/lib/useApi';
 
+const SUBTITLES: Record<User['status'], string> = {
+  pending: 'Thanks for applying! Here’s your current status and referral link.',
+  active: 'Here’s your referral link and how your earnings are doing.',
+  rejected: 'Here’s an update on your application.',
+};
+
 function ApplicationStatus({ user }: { user: User }) {
   if (user.status === 'pending') {
     return (
-      <Banner tone="info" title="We've received your application">
+      <StatusCard tone="success" label="Application received" title="We’ve received your application.">
         We usually review applications within 1 business day. Pull down to refresh; your referral link activates as soon as you’re approved.
-      </Banner>
+      </StatusCard>
     );
   }
   if (user.status === 'rejected') {
     return (
-      <Banner tone="danger" title="Your application wasn't approved">
+      <StatusCard tone="danger" label="Application update" title="Your application wasn’t approved.">
         {user.rejectionReason ? `Reason: ${user.rejectionReason}` : 'Please contact the affiliate team for details.'}
-      </Banner>
+      </StatusCard>
     );
   }
   return null;
@@ -34,9 +51,10 @@ function ReferralCard({ user }: { user: User }) {
   const active = Boolean(user.referralLinkActive && user.referralLink);
 
   const copy = async () => {
-    if (!user.referralLink) return;
+    if (!active || !user.referralLink) return;
     await Clipboard.setStringAsync(user.referralLink);
     setCopied(true);
+    AccessibilityInfo.announceForAccessibility('Link copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -46,32 +64,46 @@ function ReferralCard({ user }: { user: User }) {
   };
 
   return (
-    <Card>
-      <Title>Your referral link</Title>
-      <View style={[styles.codeBox, !active && styles.codeBoxInactive]}>
-        <Text style={[styles.code, !active && styles.inactiveText]}>{user.referralCode}</Text>
-        <Text style={[styles.link, !active && styles.inactiveText]} numberOfLines={1}>
-          {active ? user.referralLink : 'Activates after approval'}
-        </Text>
+    <LuxCard>
+      <CardLabel>Your referral link</CardLabel>
+      <View style={styles.codeBox}>
+        <View style={styles.codeText}>
+          <Text style={styles.code}>{user.referralCode}</Text>
+          <Text style={styles.codeSub} numberOfLines={1}>
+            {active ? user.referralLink : 'Activates after approval'}
+          </Text>
+        </View>
+        <IconButton icon={copied ? 'checkmark' : 'copy-outline'} label={copied ? 'Copied' : 'Copy link'} onPress={copy} disabled={!active} />
       </View>
+      <LuxDivider />
       {active ? (
-        <Row>
-          <View style={{ flex: 1 }}>
-            <Button
-              label={copied ? 'Copied!' : 'Copy link'}
-              variant="secondary"
-              onPress={copy}
-              icon={<Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={18} color={colors.primary} />}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button label="Share" onPress={share} icon={<Ionicons name="share-social-outline" size={18} color={colors.primaryText} />} />
-          </View>
-        </Row>
+        <LuxButton label="Share your link" icon="share-outline" onPress={share} />
       ) : (
-        <Small>You can share your link once the affiliate team approves your application.</Small>
+        <LuxText>You can share your link once the affiliate team approves your application.</LuxText>
       )}
-    </Card>
+    </LuxCard>
+  );
+}
+
+function AtAGlance({ summary }: { summary: Summary }) {
+  return (
+    <LuxCard>
+      <CardLabel>At a glance</CardLabel>
+      <View>
+        <LuxText>Available for next payout</LuxText>
+        <Text style={styles.bigAmount}>{formatPaise(summary.availableForNextPayoutPaise)}</Text>
+      </View>
+      <LuxDivider />
+      <LuxRow>
+        <LuxText>Waiting for review</LuxText>
+        <Text style={styles.amount}>{formatPaise(summary.pendingPaise)}</Text>
+      </LuxRow>
+      <LuxRow>
+        <LuxText>Paid to you so far</LuxText>
+        <Text style={styles.amount}>{formatPaise(summary.paidPaise)}</Text>
+      </LuxRow>
+      <LuxButton label="See all earnings" variant="link" icon="arrow-forward" onPress={() => router.navigate('/earnings')} />
+    </LuxCard>
   );
 }
 
@@ -96,55 +128,53 @@ export default function HomeScreen() {
 
   const s = summary.data;
   const firstName = user.name.split(' ')[0];
+  const error = refreshError ?? summary.error;
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh}>
-      <Text style={styles.greeting}>Hi {firstName} 👋</Text>
-      {refreshError ? <Banner tone="danger">{refreshError}</Banner> : null}
+    <LuxScreen
+      eyebrow="HOME"
+      title={`Hi ${firstName} 👋`}
+      subtitle={SUBTITLES[user.status]}
+      refreshing={refreshing}
+      onRefresh={refresh}
+    >
+      {error ? (
+        <StatusCard tone="danger" label="Couldn’t refresh" title="Something went wrong.">
+          {error}
+        </StatusCard>
+      ) : null}
       <ApplicationStatus user={user} />
 
       {s?.needsPayoutDetails ? (
-        <Banner
+        <StatusCard
           tone="warning"
-          title={`You've earned ${formatPaise(s.approvedPaise)}`}
-          action={<Button label="Add payout details" onPress={() => router.push('/payout-details')} />}
+          label="Action needed"
+          title={`You’ve earned ${formatPaise(s.approvedPaise)}`}
+          action={<LuxButton label="Add payout details" icon="arrow-forward" compact onPress={() => router.push('/payout-details')} />}
         >
           Add your UPI ID or bank account so we can pay you.
-        </Banner>
+        </StatusCard>
       ) : null}
 
       <ReferralCard user={user} />
-
-      {user.status === 'active' && s ? (
-        <Card>
-          <Title>At a glance</Title>
-          <Row>
-            <Body muted>Available for next payout</Body>
-            <Text style={styles.amount}>{formatPaise(s.availableForNextPayoutPaise)}</Text>
-          </Row>
-          <Row>
-            <Body muted>Waiting for review</Body>
-            <Text style={styles.amountSmall}>{formatPaise(s.pendingPaise)}</Text>
-          </Row>
-          <Row>
-            <Body muted>Paid to you so far</Body>
-            <Text style={styles.amountSmall}>{formatPaise(s.paidPaise)}</Text>
-          </Row>
-          <Button label="See all earnings" variant="ghost" onPress={() => router.push('/earnings')} />
-        </Card>
-      ) : null}
-      {summary.error ? <Banner tone="danger">{summary.error}</Banner> : null}
-    </Screen>
+      {user.status === 'active' && s ? <AtAGlance summary={s} /> : null}
+    </LuxScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  greeting: { fontSize: font.heading, fontWeight: '700', color: colors.text },
-  codeBox: { backgroundColor: colors.infoBg, borderRadius: radius.sm, padding: spacing.md, gap: spacing.xs },
-  codeBoxInactive: { backgroundColor: colors.neutralBg },
-  code: { fontSize: font.heading, fontWeight: '800', letterSpacing: 2, color: colors.info },
-  link: { fontSize: font.small, color: colors.info },
-  inactiveText: { color: colors.textMuted },
-  amount: { fontSize: font.title, fontWeight: '800', color: colors.success },
-  amountSmall: { fontSize: font.body, fontWeight: '700', color: colors.text },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: 12,
+    backgroundColor: palette.inputBg,
+  },
+  codeText: { flex: 1, gap: 2 },
+  code: { fontFamily: serif, fontSize: 28, fontWeight: '700', letterSpacing: 2, color: palette.ink },
+  codeSub: { fontSize: 13, color: palette.inkMuted },
+  bigAmount: { fontFamily: serif, fontSize: 34, lineHeight: 42, color: tones.success.fg },
+  amount: { fontSize: 15, fontWeight: '600', color: palette.ink },
+
 });

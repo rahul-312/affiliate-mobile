@@ -1,23 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { colors } from '@/components/theme';
+import { palette } from '@/components/lux';
 
-const TABS: { name: string; title: string; icon: ComponentProps<typeof Ionicons>['name'] }[] = [
-  { name: 'index', title: 'Home', icon: 'home-outline' },
-  { name: 'earnings', title: 'Earnings', icon: 'wallet-outline' },
-  { name: 'payouts', title: 'Payouts', icon: 'cash-outline' },
-  { name: 'account', title: 'Account', icon: 'person-circle-outline' },
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
+  { name: 'index', title: 'Home', icon: 'home-outline', activeIcon: 'home' },
+  { name: 'earnings', title: 'Earnings', icon: 'wallet-outline', activeIcon: 'wallet' },
+  { name: 'payouts', title: 'Payouts', icon: 'cash-outline', activeIcon: 'cash' },
+  { name: 'account', title: 'Account', icon: 'person-circle-outline', activeIcon: 'person-circle' },
 ];
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        headerTitleStyle: { fontWeight: '700' },
-        sceneStyle: { backgroundColor: colors.bg },
+        // Each screen draws its own editorial header.
+        headerShown: false,
+        tabBarActiveTintColor: palette.ink,
+        tabBarInactiveTintColor: palette.inkMuted,
+        tabBarStyle: { backgroundColor: palette.bg, borderTopColor: palette.inputBorder },
+        tabBarLabelStyle: { fontSize: 11 },
+        sceneStyle: { backgroundColor: palette.bg },
       }}
     >
       {TABS.map((tab) => (
@@ -27,8 +32,8 @@ export default function TabsLayout() {
           options={{
             title: tab.title,
             // Our tints are plain strings; narrow RN's wider ColorValue for the icon library's types.
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name={tab.icon} color={typeof color === 'string' ? color : undefined} size={size} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? tab.activeIcon : tab.icon} color={typeof color === 'string' ? color : undefined} size={size} />
             ),
           }}
         />

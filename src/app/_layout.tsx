@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { palette } from '@/components/lux';
 import { colors } from '@/components/theme';
 import { SessionProvider, useSession } from '@/lib/session';
 
@@ -15,6 +16,15 @@ export default function RootLayout() {
     </SessionProvider>
   );
 }
+
+/** Signed-in stack screens draw their own serif title, so the header keeps only the back control. */
+const luxHeader = {
+  headerTitle: '',
+  headerTintColor: palette.ink,
+  headerStyle: { backgroundColor: palette.bg },
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: palette.bg },
+};
 
 /**
  * Two protected areas: the public pitch and sign-in screens, and the signed-in
@@ -39,7 +49,8 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="payout-details" options={{ title: 'Payout details', presentation: 'modal' }} />
+        <Stack.Screen name="payout-details" options={{ ...luxHeader, title: 'Payout details', presentation: 'modal' }} />
+        <Stack.Screen name="how-it-works" options={{ ...luxHeader, title: 'How it works' }} />
       </Stack.Protected>
     </Stack>
   );
