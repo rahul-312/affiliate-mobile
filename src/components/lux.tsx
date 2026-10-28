@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentRef, type ReactNode, type Ref } from
 import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { spacing } from '@/components/theme';
 
-/** Warm, editorial palette for the auth screens; the rest of the app keeps the shared theme. */
+/** Warm, editorial palette for the auth and signed-in screens; only the welcome pitch still uses the shared theme. */
 export const palette = {
   bg: '#f6f2ed',
   ink: '#161412',
@@ -97,30 +97,31 @@ export function LuxChips<T extends string>({
 }
 
 /**
- * Live regions are Android-only and VoiceOver doesn't read newly shown views, so iOS needs an
- * explicit announcement. Doing it only on iOS keeps TalkBack from reading the text twice.
+ * Announces text when it appears. VoiceOver ignores newly shown views and TalkBack is unreliable
+ * with live regions on views that were just added, so both platforms get an explicit call. There
+ * is deliberately no live region alongside it, so nothing is read twice.
  */
-function useAnnounceOnIOS(children: ReactNode) {
+function useAnnounce(message: string) {
   useEffect(() => {
-    if (Platform.OS === 'ios' && typeof children === 'string') AccessibilityInfo.announceForAccessibility(children);
-  }, [children]);
+    AccessibilityInfo.announceForAccessibility(message);
+  }, [message]);
 }
 
-/** Error banner in the warm palette; the shared Banner's cool reds clash with it. */
-export function LuxErrorBanner({ children }: { children: ReactNode }) {
-  useAnnounceOnIOS(children);
+/** Error banner in the warm palette; the shared Banner's cool reds clash with it. Plain text only, so it can be announced. */
+export function LuxErrorBanner({ children }: { children: string }) {
+  useAnnounce(children);
   return (
-    <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
+    <View style={styles.banner} accessibilityRole="alert">
       <Text style={styles.bannerText}>{children}</Text>
     </View>
   );
 }
 
-/** Neutral help text in the warm palette, announced to screen readers when it appears. */
-export function LuxNote({ children }: { children: ReactNode }) {
-  useAnnounceOnIOS(children);
+/** Neutral help text in the warm palette, announced when it appears. Plain text only, so it can be announced. */
+export function LuxNote({ children }: { children: string }) {
+  useAnnounce(children);
   return (
-    <View style={styles.helpNote} accessibilityLiveRegion="polite">
+    <View style={styles.helpNote}>
       <Text style={styles.helpText}>{children}</Text>
     </View>
   );
