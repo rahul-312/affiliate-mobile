@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, font, spacing } from '@/components/theme';
-import { Banner, Body, Button, Card, Divider, Loading, Row, Screen, Small, StatusPill, Title } from '@/components/ui';
+import { palette, serif } from '@/components/lux';
+import { CardLabel, LoadErrorCard, LuxButton, LuxCard, LuxDivider, LuxLoading, LuxPill, LuxRow, LuxScreen, LuxText, tones } from '@/components/luxApp';
+import { spacing } from '@/components/theme';
 import { apiRequest } from '@/lib/api';
 import { formatBps, formatDate, formatPaise } from '@/lib/money';
 import type { Commission, Page, Summary } from '@/lib/types';
@@ -16,33 +17,37 @@ const BALANCES: { key: keyof Summary; label: string; help: string }[] = [
 ];
 
 function AvailabilityNote({ summary }: { summary: Summary }) {
-  if (summary.approvedPaise === 0) return <Small>Approved earnings will show here once the affiliate team reviews your sales.</Small>;
+  if (summary.approvedPaise === 0) return <LuxText>Approved earnings will show here once the affiliate team reviews your sales.</LuxText>;
   if (summary.needsPayoutDetails) {
     return (
-      <View style={{ gap: spacing.sm }}>
-        <Small muted={false}>Add your payout details to be included in the next payout run.</Small>
-        <Button label="Add payout details" variant="secondary" onPress={() => router.push('/payout-details')} />
+      <View style={{ gap: spacing.md }}>
+        <LuxText muted={false}>Add your payout details to be included in the next payout run.</LuxText>
+        <LuxButton label="Add payout details" icon="arrow-forward" compact onPress={() => router.push('/payout-details')} />
       </View>
     );
   }
   if (summary.belowMinimum) {
-    return <Small muted={false}>{formatPaise(summary.minPayoutPaise - summary.approvedPaise)} more in approved earnings to reach the {formatPaise(summary.minPayoutPaise)} minimum payout.</Small>;
+    return (
+      <LuxText muted={false}>
+        {formatPaise(summary.minPayoutPaise - summary.approvedPaise)} more in approved earnings to reach the {formatPaise(summary.minPayoutPaise)} minimum payout.
+      </LuxText>
+    );
   }
-  return <Small>Paid out automatically in the next payout run.</Small>;
+  return <LuxText>Paid out automatically in the next payout run.</LuxText>;
 }
 
 function CommissionRow({ commission }: { commission: Commission }) {
   return (
     <View style={styles.commission}>
-      <Row>
+      <LuxRow>
         <Text style={styles.commissionAmount}>{formatPaise(commission.amountPaise)}</Text>
-        <StatusPill status={commission.status} />
-      </Row>
-      <Small>
+        <LuxPill status={commission.status} />
+      </LuxRow>
+      <LuxText>
         {formatBps(commission.rateBps)} of a {formatPaise(commission.orderAmountPaise)} sale · {formatDate(commission.createdAt)}
-      </Small>
-      {commission.retryNote ? <Small muted={false}>⟳ {commission.retryNote}</Small> : null}
-      {commission.rejectionReason ? <Small muted={false}>Reason: {commission.rejectionReason}</Small> : null}
+      </LuxText>
+      {commission.retryNote ? <LuxText muted={false}>⟳ {commission.retryNote}</LuxText> : null}
+      {commission.rejectionReason ? <LuxText muted={false}>Reason: {commission.rejectionReason}</LuxText> : null}
     </View>
   );
 }
@@ -57,54 +62,71 @@ export default function EarningsScreen() {
   const s = summary.data;
 
   return (
-    <Screen refreshing={summary.refreshing || commissions.refreshing} onRefresh={refresh}>
-      {summary.error ? <Banner tone="danger">{summary.error}</Banner> : null}
-      {summary.loading ? <Loading /> : null}
+    <LuxScreen
+      eyebrow="EARNINGS"
+      title="Your earnings"
+      subtitle="Commissions from your link, from sale to payout."
+      refreshing={summary.refreshing || commissions.refreshing}
+      onRefresh={refresh}
+    >
+      <LoadErrorCard
+        errors={[
+          { title: 'Your balances didn’t load.', message: summary.error },
+          { title: 'Your commissions didn’t load.', message: commissions.error },
+        ]}
+      />
+      {summary.loading ? <LuxLoading /> : null}
       {s ? (
         <>
-          <Card style={styles.available}>
-            <Small>Available for next payout</Small>
+          <View style={styles.available}>
+            <CardLabel color={tones.success.fg}>Available for next payout</CardLabel>
             <Text style={styles.availableAmount}>{formatPaise(s.availableForNextPayoutPaise)}</Text>
             <AvailabilityNote summary={s} />
-          </Card>
-          <Card>
+          </View>
+          <LuxCard>
+            <CardLabel>Balances</CardLabel>
             {BALANCES.map(({ key, label, help }, index) => (
-              <View key={key}>
-                {index > 0 ? <Divider /> : null}
-                <Row>
-                  <View style={{ flex: 1 }}>
-                    <Body>{label}</Body>
-                    <Small>{help}</Small>
+              <View key={key} style={{ gap: spacing.md }}>
+                {index > 0 ? <LuxDivider /> : null}
+                <LuxRow>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <LuxText muted={false} style={styles.balanceLabel}>
+                      {label}
+                    </LuxText>
+                    <LuxText style={styles.help}>{help}</LuxText>
                   </View>
                   <Text style={styles.balance}>{formatPaise(s[key] as number)}</Text>
-                </Row>
+                </LuxRow>
               </View>
             ))}
-          </Card>
-          <Small>Payouts are sent automatically by our finance team in regular payout runs, so there’s nothing to request.</Small>
+          </LuxCard>
+          <LuxText style={styles.help}>Payouts are sent automatically by our finance team in regular payout runs, so there’s nothing to request.</LuxText>
         </>
       ) : null}
 
-      <Card>
-        <Title>Commissions</Title>
-        {commissions.error ? <Banner tone="danger">{commissions.error}</Banner> : null}
-        {commissions.loading ? <Loading /> : null}
-        {commissions.data && commissions.data.items.length === 0 ? <Body muted>No sales yet. Share your link to start earning.</Body> : null}
+      <LuxCard>
+        <CardLabel>Commissions</CardLabel>
+        {/* Announced in the card at the top; this just explains the empty list. */}
+        {commissions.error ? <LuxText>Couldn’t load your commissions. Pull down to try again.</LuxText> : null}
+        {commissions.loading ? <LuxLoading /> : null}
+        {commissions.data && commissions.data.items.length === 0 ? <LuxText>No sales yet. Share your link to start earning.</LuxText> : null}
         {commissions.data?.items.map((c, index) => (
-          <View key={c.id}>
-            {index > 0 ? <Divider /> : null}
+          <View key={c.id} style={{ gap: spacing.md }}>
+            {index > 0 ? <LuxDivider /> : null}
             <CommissionRow commission={c} />
           </View>
         ))}
-      </Card>
-    </Screen>
+      </LuxCard>
+    </LuxScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  available: { backgroundColor: colors.successBg, borderColor: colors.successBg },
-  availableAmount: { fontSize: font.hero, fontWeight: '800', color: colors.success },
-  balance: { fontSize: font.body, fontWeight: '700', color: colors.text },
-  commission: { gap: 2, paddingVertical: spacing.xs },
-  commissionAmount: { fontSize: font.body, fontWeight: '700', color: colors.text },
+  available: { backgroundColor: tones.success.bg, borderRadius: 16, padding: spacing.xl - 4, gap: spacing.sm },
+  availableAmount: { fontFamily: serif, fontSize: 40, lineHeight: 48, color: palette.ink },
+  balanceLabel: { fontSize: 15 },
+  help: { fontSize: 12, lineHeight: 17 },
+  balance: { fontSize: 15, fontWeight: '600', color: palette.ink },
+  commission: { gap: 4 },
+  commissionAmount: { fontFamily: serif, fontSize: 19, color: palette.ink },
 });

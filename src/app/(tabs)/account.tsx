@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
-import { Body, Button, Card, Divider, Row, Screen, Small, StatusPill, Title } from '@/components/ui';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { palette, serif } from '@/components/lux';
+import { CardLabel, LuxButton, LuxCard, LuxDivider, LuxPill, LuxRow, LuxScreen, LuxText } from '@/components/luxApp';
+import { spacing } from '@/components/theme';
 import { formatDate } from '@/lib/money';
 import { useSession, useUser } from '@/lib/session';
 
@@ -15,37 +17,60 @@ export default function AccountScreen() {
     ]);
 
   return (
-    <Screen>
-      <Card>
-        <Title>{user.name}</Title>
-        <Small>{user.email}</Small>
-        <Row>
-          <Body muted>Application</Body>
-          <StatusPill status={user.status} />
-        </Row>
-        <Small>Member since {formatDate(user.createdAt)}</Small>
-      </Card>
+    <LuxScreen eyebrow="ACCOUNT" title="Your account">
+      <LuxCard>
+        <View style={styles.profile}>
+          <View style={styles.avatar} importantForAccessibility="no-hide-descendants">
+            <Text style={styles.avatarText}>{user.name.trim().charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.name}>{user.name}</Text>
+            <LuxText>{user.email}</LuxText>
+          </View>
+        </View>
+        <LuxDivider />
+        <LuxRow>
+          <LuxText>Application</LuxText>
+          <LuxPill status={user.status} />
+        </LuxRow>
+        <LuxRow>
+          <LuxText>Member since</LuxText>
+          <LuxText muted={false}>{formatDate(user.createdAt)}</LuxText>
+        </LuxRow>
+      </LuxCard>
 
-      <Card>
-        <Title>Payout details</Title>
+      <LuxCard>
+        <CardLabel>Payout details</CardLabel>
         {user.status !== 'active' ? (
-          <Small>You can add payout details once your application is approved.</Small>
+          <LuxText>You can add payout details once your application is approved.</LuxText>
         ) : user.payoutMethod ? (
           <>
-            <Body>{user.payoutMethod.masked}</Body>
-            <Small>Updated {formatDate(user.payoutMethod.updatedAt)}. Shown masked for your security.</Small>
-            <Divider />
-            <Button label="Change payout details" variant="secondary" onPress={() => router.push('/payout-details')} />
+            <Text style={styles.masked}>{user.payoutMethod.masked}</Text>
+            <LuxText>Updated {formatDate(user.payoutMethod.updatedAt)}. Shown masked for your security.</LuxText>
+            <LuxButton label="Change payout details" variant="secondary" onPress={() => router.push('/payout-details')} />
           </>
         ) : (
           <>
-            <Small>Not added yet. We need a UPI ID or bank account to send your earnings.</Small>
-            <Button label="Add payout details" onPress={() => router.push('/payout-details')} />
+            <LuxText>Not added yet. We need a UPI ID or bank account to send your earnings.</LuxText>
+            <LuxButton label="Add payout details" icon="arrow-forward" onPress={() => router.push('/payout-details')} />
           </>
         )}
-      </Card>
+      </LuxCard>
 
-      <Button label="Sign out" variant="ghost" onPress={confirmSignOut} />
-    </Screen>
+      <LuxCard>
+        <CardLabel>Program</CardLabel>
+        <LuxButton label="How the program works" variant="link" icon="arrow-forward" onPress={() => router.push('/how-it-works')} />
+      </LuxCard>
+
+      <LuxButton label="Sign out" variant="secondary" icon="log-out-outline" onPress={confirmSignOut} />
+    </LuxScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  profile: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.sand2 },
+  avatarText: { fontFamily: serif, fontSize: 24, color: palette.ink },
+  name: { fontFamily: serif, fontSize: 22, color: palette.ink },
+  masked: { fontSize: 16, fontWeight: '600', letterSpacing: 1, color: palette.ink },
+});
