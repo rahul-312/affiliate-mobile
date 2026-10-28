@@ -79,7 +79,7 @@ Sign in with `affiliate@demo.com` / `demo1234`.
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Checks TypeScript types |
 | `npm run doctor` | Checks the Expo project for setup problems |
-| `npm run build:apk` | Builds the APK on EAS (see below) |
+| `npm run build:apk` | Builds the APK on EAS (needs `eas-cli` installed globally; otherwise use the `npx` command below) |
 
 ---
 
@@ -123,8 +123,10 @@ The APK is built in the cloud with EAS, so you don't need Android Studio for thi
 4. Start the build:
 
    ```bash
-   npm run build:apk
+   npx eas-cli@latest build -p android --profile preview
    ```
+
+   On the first build, answer **Yes** when it asks to generate a new Android Keystore.
 
 5. When it finishes, download the APK from the link EAS prints, install it on a phone, and check that you can sign in.
 6. Attach the APK to a new **GitHub Release** on this repo.
