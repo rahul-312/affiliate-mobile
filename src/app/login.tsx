@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
-  AccessibilityInfo,
   ActivityIndicator,
   AppState,
   KeyboardAvoidingView,
@@ -60,12 +59,6 @@ export default function LoginScreen() {
       setBusy(false);
       inFlight.current = false;
     }
-  };
-
-  const toggleResetHelp = () => {
-    const next = !showResetHelp;
-    setShowResetHelp(next);
-    if (next) AccessibilityInfo.announceForAccessibility(RESET_HELP);
   };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/welcome'));
@@ -137,7 +130,7 @@ export default function LoginScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: showResetHelp }}
-                onPress={toggleResetHelp}
+                onPress={() => setShowResetHelp((v) => !v)}
                 hitSlop={8}
                 style={[styles.forgot, styles.link]}
               >
