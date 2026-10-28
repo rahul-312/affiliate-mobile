@@ -245,13 +245,18 @@ export function StatusCard({
  * Every load error on a screen in one card. Separate cards would each announce, and on iOS the
  * second announcement cuts off the first. Identical messages (e.g. offline) are shown once.
  */
-export function LoadErrorCard({ errors }: { errors: { title: string; message: string | null }[] }) {
+export function LoadErrorCard({ errors }: { errors: { label?: string; title: string; message: string | null }[] }) {
   const failed = errors.filter((e) => e.message);
   const [first] = failed;
   if (!first) return null;
+  const single = failed.length === 1;
   const messages = [...new Set(failed.map((e) => e.message))];
   return (
-    <StatusCard tone="danger" label="Couldn’t load" title={failed.length === 1 ? first.title : 'Some details didn’t load.'}>
+    <StatusCard
+      tone="danger"
+      label={single ? (first.label ?? 'Couldn’t load') : 'Couldn’t load'}
+      title={single ? first.title : 'Some details didn’t load.'}
+    >
       {messages.join('\n')}
     </StatusCard>
   );

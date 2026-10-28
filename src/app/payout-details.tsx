@@ -14,6 +14,9 @@ const METHODS: { value: MethodType; label: string }[] = [
   { value: 'bank', label: 'Bank account' },
 ];
 
+/** Masked fields look like passwords to iOS Password AutoFill and Android autofill; keep account numbers out of password managers. */
+const NO_AUTOFILL = { textContentType: 'none', autoComplete: 'off', importantForAutofill: 'no' } as const;
+
 /** Falls back to Home when the modal was opened directly (a deep link or a web refresh) and there's nothing behind it. */
 const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
@@ -110,6 +113,7 @@ export default function PayoutDetailsScreen() {
             onChangeText={(v) => setAccountNumber(v.replace(/\D/g, ''))}
             keyboardType="number-pad"
             secureTextEntry
+            {...NO_AUTOFILL}
             maxLength={18}
             error={show(errors.accountNumber)}
           />
@@ -119,6 +123,7 @@ export default function PayoutDetailsScreen() {
             onChangeText={(v) => setConfirmNumber(v.replace(/\D/g, ''))}
             keyboardType="number-pad"
             secureTextEntry
+            {...NO_AUTOFILL}
             maxLength={18}
             error={show(errors.confirmNumber)}
           />

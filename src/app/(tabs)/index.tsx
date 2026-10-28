@@ -144,7 +144,7 @@ export default function HomeScreen() {
     >
       <LoadErrorCard
         errors={[
-          { title: 'Your account status didn’t update.', message: refreshError },
+          { label: 'Couldn’t refresh', title: 'Your account status didn’t update.', message: refreshError },
           { title: 'Your earnings summary didn’t load.', message: summary.error },
         ]}
       />
