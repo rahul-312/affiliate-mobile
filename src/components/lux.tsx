@@ -1,5 +1,5 @@
-import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { useEffect, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { spacing } from '@/components/theme';
 
 /** Warm, editorial palette for the auth screens; the rest of the app keeps the shared theme. */
@@ -96,11 +96,32 @@ export function LuxChips<T extends string>({
   );
 }
 
+/**
+ * Live regions are Android-only and VoiceOver doesn't read newly shown views, so iOS needs an
+ * explicit announcement. Doing it only on iOS keeps TalkBack from reading the text twice.
+ */
+function useAnnounceOnIOS(children: ReactNode) {
+  useEffect(() => {
+    if (Platform.OS === 'ios' && typeof children === 'string') AccessibilityInfo.announceForAccessibility(children);
+  }, [children]);
+}
+
 /** Error banner in the warm palette; the shared Banner's cool reds clash with it. */
 export function LuxErrorBanner({ children }: { children: ReactNode }) {
+  useAnnounceOnIOS(children);
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Text style={styles.bannerText}>{children}</Text>
+    </View>
+  );
+}
+
+/** Neutral help text in the warm palette, announced to screen readers when it appears. */
+export function LuxNote({ children }: { children: ReactNode }) {
+  useAnnounceOnIOS(children);
+  return (
+    <View style={styles.helpNote} accessibilityLiveRegion="polite">
+      <Text style={styles.helpText}>{children}</Text>
     </View>
   );
 }
@@ -160,6 +181,8 @@ const styles = StyleSheet.create({
 
   banner: { padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: palette.danger, backgroundColor: palette.dangerBg },
   bannerText: { fontSize: 14, lineHeight: 20, color: palette.danger },
+  helpNote: { padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: palette.inputBorder, backgroundColor: palette.inputBg },
+  helpText: { fontSize: 14, lineHeight: 20, color: palette.inkMuted },
 
   streak: { position: 'absolute', width: 26, height: 200, borderRadius: 20, backgroundColor: palette.shadow, opacity: 0.35 },
   stoneTop: { position: 'absolute', top: 90, right: -50, width: 110, height: 140, borderRadius: 36, backgroundColor: palette.sand2, transform: [{ rotate: '-18deg' }] },
