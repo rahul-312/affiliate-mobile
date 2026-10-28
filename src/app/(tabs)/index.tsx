@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Share, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, AppState, Share, StyleSheet, Text, View } from 'react-native';
 import { palette, serif } from '@/components/lux';
 import {
   CardLabel,
@@ -186,6 +186,13 @@ export default function HomeScreen() {
       void Promise.all([refreshUser().catch(() => undefined), refreshSummary()]);
     }, [refreshUser, refreshSummary]),
   );
+  // Same when the app returns from the background, which doesn't count as a focus change.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void Promise.all([refreshUser().catch(() => undefined), refreshSummary()]);
+    });
+    return () => subscription.remove();
+  }, [refreshUser, refreshSummary]);
 
   const s = summary.data;
   const firstName = user.name.split(' ')[0];
