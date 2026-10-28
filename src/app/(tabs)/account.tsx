@@ -1,14 +1,39 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { palette, serif } from '@/components/lux';
 import { CardLabel, LuxButton, LuxCard, LuxDivider, LuxPill, LuxRow, LuxScreen, LuxText } from '@/components/luxApp';
 import { spacing } from '@/components/theme';
+import { apiRequest, errorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/money';
+import type { User } from '@/lib/types';
 import { useSession, useUser } from '@/lib/session';
 
 export default function AccountScreen() {
   const user = useUser();
-  const { signOut } = useSession();
+  const { signOut, setUser } = useSession();
+  const [busy, setBusy] = useState(false);
+
+  const updateStatus = async (action: 'pause' | 'resume') => {
+    setBusy(true);
+    try {
+      setUser(await apiRequest<User>(`/me/${action}`, { method: 'POST', body: {} }));
+    } catch (err) {
+      Alert.alert('Something went wrong', errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmPause = () =>
+    Alert.alert(
+      'Pause your account?',
+      'Your referral link stops working and new sales won’t earn commission until you resume. Earnings you already have will still be paid.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Pause', style: 'destructive', onPress: () => void updateStatus('pause') },
+      ],
+    );
 
   const confirmSignOut = () =>
     Alert.alert('Sign out?', 'You can sign back in any time.', [
@@ -56,6 +81,23 @@ export default function AccountScreen() {
           </>
         )}
       </LuxCard>
+
+      {user.status === 'active' || (user.status === 'deactivated' && user.deactivatedBy === 'affiliate') ? (
+        <LuxCard>
+          <CardLabel>Taking a break?</CardLabel>
+          {user.status === 'active' ? (
+            <>
+              <LuxText>Pause your account to switch off your referral link for a while. You can resume any time.</LuxText>
+              <LuxButton label="Pause my account" variant="secondary" icon="pause-outline" busy={busy} onPress={confirmPause} />
+            </>
+          ) : (
+            <>
+              <LuxText>Your account is paused. Resume to switch your referral link back on.</LuxText>
+              <LuxButton label="Resume my account" icon="play-outline" busy={busy} onPress={() => void updateStatus('resume')} />
+            </>
+          )}
+        </LuxCard>
+      ) : null}
 
       <LuxCard>
         <CardLabel>Program</CardLabel>

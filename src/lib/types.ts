@@ -1,6 +1,6 @@
 /** Response shapes of the affiliate-backend API. Amounts are integer paise, rates integer basis points. */
 
-export type UserStatus = 'pending' | 'active' | 'rejected';
+export type UserStatus = 'pending' | 'active' | 'rejected' | 'deactivated';
 export type CommissionStatus = 'pending' | 'approved' | 'rejected' | 'processing' | 'paid';
 export type PromotionChannel = 'instagram' | 'youtube' | 'website' | 'messaging' | 'other';
 
@@ -13,7 +13,12 @@ export interface User {
   createdAt: string;
   promotionChannel?: PromotionChannel | null;
   rejectionReason?: string | null;
+  deactivationReason?: string | null;
+  /** 'affiliate' when you paused yourself (you can resume), 'ops' when the affiliate team did. */
+  deactivatedBy?: 'affiliate' | 'ops' | null;
   referralCode?: string | null;
+  /** Your commission rate, set by the affiliate team at approval. */
+  commissionRateBps?: number | null;
   referralLinkActive?: boolean;
   referralLink?: string | null;
   payoutMethod?: { type: 'upi' | 'bank'; masked: string; updatedAt: string } | null;

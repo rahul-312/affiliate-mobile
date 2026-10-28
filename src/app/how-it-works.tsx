@@ -26,7 +26,7 @@ export default function HowItWorksScreen() {
           <View style={styles.stats}>
             <LuxCard style={styles.stat}>
               <Text style={styles.statValue}>{formatBps(program.rateBps)}</Text>
-              <LuxText>commission on every sale</LuxText>
+              <LuxText>standard rate · yours is confirmed at approval</LuxText>
             </LuxCard>
             <LuxCard style={styles.stat}>
               <Text style={styles.statValue}>{formatPaise(program.minPayoutPaise)}</Text>

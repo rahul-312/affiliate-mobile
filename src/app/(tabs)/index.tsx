@@ -18,7 +18,7 @@ import {
 } from '@/components/luxApp';
 import { spacing } from '@/components/theme';
 import { apiRequest, errorMessage } from '@/lib/api';
-import { formatPaise } from '@/lib/money';
+import { formatBps, formatPaise } from '@/lib/money';
 import { useSession, useUser } from '@/lib/session';
 import type { Summary, User } from '@/lib/types';
 import { useApi } from '@/lib/useApi';
@@ -27,9 +27,46 @@ const SUBTITLES: Record<User['status'], string> = {
   pending: 'Thanks for applying! Here’s your current status and referral link.',
   active: 'Here’s your referral link and how your earnings are doing.',
   rejected: 'Here’s an update on your application.',
+  deactivated: 'Your account is paused for now.',
 };
 
+function PausedStatus({ user }: { user: User }) {
+  const { setUser } = useSession();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resume = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setUser(await apiRequest<User>('/me/resume', { method: 'POST', body: {} }));
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  };
+
+  if (user.deactivatedBy === 'affiliate') {
+    return (
+      <StatusCard
+        tone="neutral"
+        label="Paused"
+        title="You’ve paused your account."
+        action={<LuxButton label="Resume" icon="play-outline" compact busy={busy} onPress={resume} />}
+      >
+        {error ?? 'Your link is off and new sales won’t earn commission. Earnings you already have will still be paid. Resume whenever you’re ready.'}
+      </StatusCard>
+    );
+  }
+  return (
+    <StatusCard tone="neutral" label="Account paused" title="The affiliate team has paused your account.">
+      {`${user.deactivationReason ? `Reason: ${user.deactivationReason}. ` : ''}Earnings you already have will still be paid. Please contact the affiliate team to reactivate it.`}
+    </StatusCard>
+  );
+}
+
 function ApplicationStatus({ user }: { user: User }) {
+  if (user.status === 'deactivated') return <PausedStatus user={user} />;
   if (user.status === 'pending') {
     return (
       <StatusCard tone="warning" label="Application received" title="We’ve received your application.">
@@ -81,6 +118,11 @@ function ReferralCard({ user }: { user: User }) {
         <IconButton icon={copied ? 'checkmark' : 'copy-outline'} label={copied ? 'Copied' : 'Copy link'} onPress={copy} disabled={!active} />
       </View>
       <LuxDivider />
+      {active && user.commissionRateBps ? (
+        <LuxText>
+          You earn <Text style={styles.rate}>{formatBps(user.commissionRateBps)}</Text> on every sale through your link.
+        </LuxText>
+      ) : null}
       {active ? (
         <LuxButton label="Share your link" icon="share-outline" onPress={share} />
       ) : (
@@ -182,4 +224,5 @@ const styles = StyleSheet.create({
   codeSub: { fontSize: 13, color: palette.inkMuted },
   bigAmount: { fontFamily: serif, fontSize: 34, lineHeight: 42, color: tones.success.fg },
   amount: { fontSize: 15, fontWeight: '600', color: palette.ink },
+  rate: { fontWeight: '700', color: palette.ink },
 });

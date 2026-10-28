@@ -27,7 +27,7 @@ export default function WelcomeScreen() {
           <View style={styles.stats}>
             <Card style={styles.stat}>
               <Text style={styles.statValue}>{formatBps(program.rateBps)}</Text>
-              <Small>commission on every sale</Small>
+              <Small>standard rate · yours is confirmed at approval</Small>
             </Card>
             <Card style={styles.stat}>
               <Text style={styles.statValue}>{formatPaise(program.minPayoutPaise)}</Text>
