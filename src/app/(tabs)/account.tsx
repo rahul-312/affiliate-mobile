@@ -4,11 +4,24 @@ import { palette, serif } from '@/components/lux';
 import { CardLabel, LuxButton, LuxCard, LuxDivider, LuxPill, LuxRow, LuxScreen, LuxText } from '@/components/luxApp';
 import { spacing } from '@/components/theme';
 import { formatDate } from '@/lib/money';
+import { canChangeOwnStatus, canManagePayouts } from '@/lib/account';
 import { useSession, useUser } from '@/lib/session';
+import { useAccountStatus } from '@/lib/useAccountStatus';
 
 export default function AccountScreen() {
   const user = useUser();
   const { signOut } = useSession();
+  const { busy, error, pause, resume } = useAccountStatus();
+
+  const confirmPause = () =>
+    Alert.alert(
+      'Pause your account?',
+      'Your referral link stops working and new sales won’t earn commission until you resume. Earnings you already have will still be paid.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Pause', style: 'destructive', onPress: () => void pause() },
+      ],
+    );
 
   const confirmSignOut = () =>
     Alert.alert('Sign out?', 'You can sign back in any time.', [
@@ -30,7 +43,7 @@ export default function AccountScreen() {
         </View>
         <LuxDivider />
         <LuxRow>
-          <LuxText>Application</LuxText>
+          <LuxText>Account status</LuxText>
           <LuxPill status={user.status} />
         </LuxRow>
         <LuxRow>
@@ -41,8 +54,12 @@ export default function AccountScreen() {
 
       <LuxCard>
         <CardLabel>Payout details</CardLabel>
-        {user.status !== 'active' ? (
-          <LuxText>You can add payout details once your application is approved.</LuxText>
+        {!canManagePayouts(user) ? (
+          <LuxText>
+            {user.status === 'deactivated'
+              ? 'Payout details are locked while the affiliate team has paused your account.'
+              : 'You can add payout details once your application is approved.'}
+          </LuxText>
         ) : user.payoutMethod ? (
           <>
             <Text style={styles.masked}>{user.payoutMethod.masked}</Text>
@@ -56,6 +73,31 @@ export default function AccountScreen() {
           </>
         )}
       </LuxCard>
+
+      {/* If a pause or resume was refused because the team paused the account, the card below is gone: keep the reason visible. */}
+      {error && !canChangeOwnStatus(user) ? (
+        <LuxCard>
+          <CardLabel>Account paused</CardLabel>
+          <LuxText muted={false}>{error}</LuxText>
+        </LuxCard>
+      ) : null}
+      {canChangeOwnStatus(user) ? (
+        <LuxCard>
+          <CardLabel>Taking a break?</CardLabel>
+          {error ? <LuxText muted={false}>{error}</LuxText> : null}
+          {user.status === 'active' ? (
+            <>
+              <LuxText>Pause your account to switch off your referral link for a while. You can resume any time.</LuxText>
+              <LuxButton label="Pause my account" variant="secondary" icon="pause-outline" busy={busy} onPress={confirmPause} />
+            </>
+          ) : (
+            <>
+              <LuxText>Your account is paused. Resume to switch your referral link back on.</LuxText>
+              <LuxButton label="Resume my account" icon="play-outline" busy={busy} onPress={() => void resume()} />
+            </>
+          )}
+        </LuxCard>
+      ) : null}
 
       <LuxCard>
         <CardLabel>Program</CardLabel>

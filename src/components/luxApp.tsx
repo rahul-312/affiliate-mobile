@@ -269,6 +269,7 @@ const STATUS: Record<string, { tone: Tone; label: string }> = {
   paid: { tone: 'success', label: 'Paid' },
   rejected: { tone: 'danger', label: 'Rejected' },
   active: { tone: 'success', label: 'Active' },
+  deactivated: { tone: 'neutral', label: 'Paused' },
 };
 
 export function LuxPill({ status }: { status: string }) {

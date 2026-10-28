@@ -18,6 +18,9 @@ const BALANCES: { key: keyof Summary; label: string; help: string }[] = [
 
 function AvailabilityNote({ summary }: { summary: Summary }) {
   if (summary.approvedPaise === 0) return <LuxText>Approved earnings will show here once the affiliate team reviews your sales.</LuxText>;
+  if (summary.payoutsOnHold) {
+    return <LuxText muted={false}>On hold while your account is paused by the affiliate team. It’s paid in the next run after they reactivate it.</LuxText>;
+  }
   if (summary.needsPayoutDetails) {
     return (
       <View style={{ gap: spacing.md }}>
