@@ -105,7 +105,11 @@ export default function EarningsScreen() {
 
       <LuxCard>
         <CardLabel>Commissions</CardLabel>
-        {commissions.error ? <LuxText style={{ color: palette.danger }}>{commissions.error}</LuxText> : null}
+        {commissions.error ? (
+          <StatusCard tone="danger" label="Couldn’t load" title="Your commissions didn’t load.">
+            {commissions.error}
+          </StatusCard>
+        ) : null}
         {commissions.loading ? <LuxLoading /> : null}
         {commissions.data && commissions.data.items.length === 0 ? <LuxText>No sales yet. Share your link to start earning.</LuxText> : null}
         {commissions.data?.items.map((c, index) => (

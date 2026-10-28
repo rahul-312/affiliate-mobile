@@ -23,6 +23,8 @@ const luxHeader = {
   headerTintColor: palette.ink,
   headerStyle: { backgroundColor: palette.bg },
   headerShadowVisible: false,
+  // iOS would otherwise label the back button with the previous route's name, "(tabs)".
+  headerBackButtonDisplayMode: 'minimal' as const,
   contentStyle: { backgroundColor: palette.bg },
 };
 
@@ -49,7 +51,7 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="payout-details" options={{ ...luxHeader, title: 'Payout details', presentation: 'modal' }} />
+        <Stack.Screen name="payout-details" options={{ headerShown: false, contentStyle: { backgroundColor: palette.bg }, title: 'Payout details', presentation: 'modal' }} />
         <Stack.Screen name="how-it-works" options={{ ...luxHeader, title: 'How it works' }} />
       </Stack.Protected>
     </Stack>

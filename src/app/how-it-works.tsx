@@ -37,7 +37,7 @@ export default function HowItWorksScreen() {
           <LuxCard>
             <CardLabel>Step by step</CardLabel>
             {program.steps.map((step, index) => (
-              <View key={step} style={styles.listRow}>
+              <View key={`${index}-${step}`} style={styles.listRow}>
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{index + 1}</Text>
                 </View>
@@ -50,8 +50,8 @@ export default function HowItWorksScreen() {
 
           <LuxCard>
             <CardLabel>What counts as a sale</CardLabel>
-            {program.qualifyingRules.map((rule) => (
-              <View key={rule} style={styles.listRow}>
+            {program.qualifyingRules.map((rule, index) => (
+              <View key={`${index}-${rule}`} style={styles.listRow}>
                 <Ionicons name="checkmark-circle" size={20} color={tones.success.dot} />
                 <LuxText muted={false} style={styles.listText}>
                   {rule}

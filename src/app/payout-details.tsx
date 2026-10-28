@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { LuxChips, LuxErrorBanner, LuxField } from '@/components/lux';
-import { LuxButton, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
+import { IconButton, LuxButton, LuxScreen, LuxText, StatusCard } from '@/components/luxApp';
 import { apiRequest, errorMessage } from '@/lib/api';
 import { useSession, useUser } from '@/lib/session';
 import type { PayoutMethodInput, User } from '@/lib/types';
@@ -13,6 +13,9 @@ const METHODS: { value: MethodType; label: string }[] = [
   { value: 'upi', label: 'UPI' },
   { value: 'bank', label: 'Bank account' },
 ];
+
+/** The modal has no header bar, so this is the way out on Android and web, where there's no swipe to dismiss. */
+const CloseButton = () => <IconButton icon="close" label="Close" onPress={() => router.back()} />;
 
 /**
  * Full details are sent once over HTTPS, stored encrypted on the server and
@@ -33,7 +36,7 @@ export default function PayoutDetailsScreen() {
 
   if (user.status !== 'active') {
     return (
-      <LuxScreen edges={['bottom']} eyebrow="PAYOUTS" title="Payout details">
+      <LuxScreen edges={['top', 'bottom']} eyebrow="PAYOUTS" title="Payout details" action={<CloseButton />}>
         <StatusCard tone="neutral" label="Not yet" title="Available after approval.">
           You can add payout details once your application is approved.
         </StatusCard>
@@ -73,9 +76,10 @@ export default function PayoutDetailsScreen() {
 
   return (
     <LuxScreen
-      edges={['bottom']}
+      edges={['top', 'bottom']}
       eyebrow="PAYOUTS"
       title="Payout details"
+      action={<CloseButton />}
       subtitle={user.payoutMethod ? `Currently: ${user.payoutMethod.masked}. Saving replaces it.` : 'Where should we send your earnings?'}
     >
       {error ? <LuxErrorBanner>{error}</LuxErrorBanner> : null}

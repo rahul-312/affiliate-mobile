@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Share, StyleSheet, Text, View } from 'react-native';
 import { palette, serif } from '@/components/lux';
 import {
@@ -31,7 +31,7 @@ const SUBTITLES: Record<User['status'], string> = {
 function ApplicationStatus({ user }: { user: User }) {
   if (user.status === 'pending') {
     return (
-      <StatusCard tone="success" label="Application received" title="We’ve received your application.">
+      <StatusCard tone="warning" label="Application received" title="We’ve received your application.">
         We usually review applications within 1 business day. Pull down to refresh; your referral link activates as soon as you’re approved.
       </StatusCard>
     );
@@ -48,14 +48,18 @@ function ApplicationStatus({ user }: { user: User }) {
 
 function ReferralCard({ user }: { user: User }) {
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const active = Boolean(user.referralLinkActive && user.referralLink);
+
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
   const copy = async () => {
     if (!active || !user.referralLink) return;
     await Clipboard.setStringAsync(user.referralLink);
     setCopied(true);
     AccessibilityInfo.announceForAccessibility('Link copied');
-    setTimeout(() => setCopied(false), 2000);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const share = async () => {
@@ -68,7 +72,7 @@ function ReferralCard({ user }: { user: User }) {
       <CardLabel>Your referral link</CardLabel>
       <View style={styles.codeBox}>
         <View style={styles.codeText}>
-          <Text style={styles.code}>{user.referralCode}</Text>
+          <Text style={[styles.code, !active && styles.codeInactive]}>{user.referralCode}</Text>
           <Text style={styles.codeSub} numberOfLines={1}>
             {active ? user.referralLink : 'Activates after approval'}
           </Text>
@@ -128,7 +132,6 @@ export default function HomeScreen() {
 
   const s = summary.data;
   const firstName = user.name.split(' ')[0];
-  const error = refreshError ?? summary.error;
 
   return (
     <LuxScreen
@@ -138,9 +141,14 @@ export default function HomeScreen() {
       refreshing={refreshing}
       onRefresh={refresh}
     >
-      {error ? (
-        <StatusCard tone="danger" label="Couldn’t refresh" title="Something went wrong.">
-          {error}
+      {refreshError ? (
+        <StatusCard tone="danger" label="Couldn’t refresh" title="Your account status didn’t update.">
+          {refreshError}
+        </StatusCard>
+      ) : null}
+      {summary.error ? (
+        <StatusCard tone="danger" label="Couldn’t load" title="Your earnings summary didn’t load.">
+          {summary.error}
         </StatusCard>
       ) : null}
       <ApplicationStatus user={user} />
@@ -173,8 +181,8 @@ const styles = StyleSheet.create({
   },
   codeText: { flex: 1, gap: 2 },
   code: { fontFamily: serif, fontSize: 28, fontWeight: '700', letterSpacing: 2, color: palette.ink },
+  codeInactive: { color: palette.inkMuted },
   codeSub: { fontSize: 13, color: palette.inkMuted },
   bigAmount: { fontFamily: serif, fontSize: 34, lineHeight: 42, color: tones.success.fg },
   amount: { fontSize: 15, fontWeight: '600', color: palette.ink },
-
 });

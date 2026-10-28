@@ -1,6 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps, ReactNode } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { useEffect, type ComponentProps, type ReactNode } from 'react';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { palette, serif } from '@/components/lux';
 import { spacing } from '@/components/theme';
@@ -43,6 +55,8 @@ export function LuxScreen({ children, eyebrow, title, subtitle, action, refreshi
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
+          // iOS: scroll a focused field into view above the keyboard (Android resizes the window itself).
+          automaticallyAdjustKeyboardInsets
           refreshControl={onRefresh ? <RefreshControl refreshing={Boolean(refreshing)} onRefresh={onRefresh} tintColor={palette.ink} colors={[palette.ink]} /> : undefined}
         >
           <View style={styles.column}>
@@ -99,7 +113,7 @@ export const CardLabel = ({ children, color }: { children: string; color?: strin
 
 export const CardTitle = ({ children }: { children: ReactNode }) => <Text style={styles.cardTitle}>{children}</Text>;
 
-export const LuxText = ({ children, muted = true, style }: { children: ReactNode; muted?: boolean; style?: object }) => (
+export const LuxText = ({ children, muted = true, style }: { children: ReactNode; muted?: boolean; style?: StyleProp<TextStyle> }) => (
   <Text style={[styles.text, muted && styles.muted, style]}>{children}</Text>
 );
 
@@ -188,9 +202,15 @@ export function IconButton({ icon, label, onPress, disabled }: { icon: IconName;
 
 /* ---------- feedback ---------- */
 
-/** A tinted card with a status dot, used for application status and things that need the affiliate's attention. */
-export function StatusCard({ tone, label, title, children, action }: { tone: Tone; label: string; title: string; children?: ReactNode; action?: ReactNode }) {
+/**
+ * A tinted card with a status dot, used for application status and things that need the affiliate's attention.
+ * Danger cards are announced when they appear, like LuxErrorBanner, so the body is plain text only.
+ */
+export function StatusCard({ tone, label, title, children, action }: { tone: Tone; label: string; title: string; children?: string; action?: ReactNode }) {
   const c = tones[tone];
+  useEffect(() => {
+    if (tone === 'danger') AccessibilityInfo.announceForAccessibility(children ? `${title} ${children}` : title);
+  }, [tone, title, children]);
   return (
     <View style={[styles.statusCard, { backgroundColor: c.bg }]} accessibilityRole={tone === 'danger' ? 'alert' : 'summary'}>
       <View style={styles.statusLabelRow}>

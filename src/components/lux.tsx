@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentRef, type ReactNode, type Ref } from
 import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { spacing } from '@/components/theme';
 
-/** Warm, editorial palette for the auth screens; the rest of the app keeps the shared theme. */
+/** Warm, editorial palette for the auth and signed-in screens; only the welcome pitch still uses the shared theme. */
 export const palette = {
   bg: '#f6f2ed',
   ink: '#161412',
